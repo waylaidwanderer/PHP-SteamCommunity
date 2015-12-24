@@ -1,0 +1,14 @@
+{
+    "name": "waylaidwanderer/php-steamcommunity",
+    "description": "A PHP library for interacting with the Steam Community website (steamcommunity.com)",
+    "require": {
+        "phpseclib/phpseclib": "^2.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Joel",
+            "email": "waylaidwanderer@live.com"
+        }
+    ]
+}
