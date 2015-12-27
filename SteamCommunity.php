@@ -10,6 +10,7 @@ namespace waylaidwanderer\SteamCommunity;
 
 use phpseclib\Crypt\RSA;
 use phpseclib\Math\BigInteger;
+use waylaidwanderer\SteamCommunity\Enum\LoginResult;
 
 class SteamCommunity
 {

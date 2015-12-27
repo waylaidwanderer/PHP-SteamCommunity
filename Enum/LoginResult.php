@@ -6,7 +6,7 @@
  * Time: 8:37 AM
  */
 
-namespace waylaidwanderer\SteamCommunity;
+namespace waylaidwanderer\SteamCommunity\Enum;
 
 
 abstract class LoginResult
