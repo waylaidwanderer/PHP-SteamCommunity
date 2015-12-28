@@ -234,7 +234,7 @@ class SteamCommunity
 
     private function getCookiesFilePath()
     {
-        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefiles";
+        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
     }
 
     /**
