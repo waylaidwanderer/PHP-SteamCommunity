@@ -109,6 +109,7 @@ class SteamCommunity
         } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
         } else if ($loginJson['success']) {
+            $this->steamId = $this->_getSteamId();
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
@@ -151,17 +152,13 @@ class SteamCommunity
             if ($createAccountJson == null) {
                 return CreateAccountResult::GeneralFailure;
             } else if (isset($createAccountJson['bSuccess']) && $createAccountJson['bSuccess']) {
+                $this->steamId = $this->_getSteamId();
+                $this->loggedIn = true;
                 return CreateAccountResult::CreatedOkay;
             }
         }
 
         return CreateAccountResult::GeneralFailure;
-    }
-
-    private function _isLoggedIn()
-    {
-        $response = $this->cURL('http://steamcommunity.com/', null, null);
-        return strpos($response, '>'.$this->username.'</span>') !== false;
     }
 
     public function cURL($url, $ref, $postData)
@@ -197,17 +194,28 @@ class SteamCommunity
         return $output;
     }
 
+    private function _isLoggedIn()
+    {
+        if (is_null($this->steamId)) {
+            $this->steamId = $this->_getSteamId();
+        }
+        return $this->steamId != 0;
+    }
+
+    private function _getSteamId()
+    {
+        $response = $this->cURL('http://steamcommunity.com/', null, null);
+        $pattern = '/g_steamID = (.*);/';
+        preg_match($pattern, $response, $matches);
+        if (!isset($matches[1])) {
+            throw new SteamException('Unexpected response from Steam.');
+        }
+        return str_replace('"', '', $matches[1]);
+    }
+
     private function getCookiesFilePath()
     {
         return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefiles";
-    }
-
-    /**
-     * @return string
-     */
-    public function getUsername()
-    {
-        return $this->username;
     }
 
     /**
@@ -221,8 +229,31 @@ class SteamCommunity
     /**
      * @return string
      */
+    public function getUsername()
+    {
+        return $this->username;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * @return string
+     */
     public function getSteamId()
     {
+        if (is_null($this->steamId)) {
+            $steamId = $this->_getSteamId();
+            if ($steamId == 'false') {
+                $steamId = 0;
+            }
+            $this->steamId = $steamId;
+        }
         return $this->steamId;
     }
 
