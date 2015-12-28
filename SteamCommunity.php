@@ -35,6 +35,7 @@ class SteamCommunity
     private $loggedIn = false;
 
     protected $market;
+    protected $tradeOffers;
 
     public function __construct($username, $password, $cookieFilesDir) {
         $this->username = $username;
@@ -44,6 +45,7 @@ class SteamCommunity
         $this->setSession();
 
         $this->market = new Market($this);
+        $this->tradeOffers = new TradeOffers($this);
     }
 
     /**
@@ -54,7 +56,7 @@ class SteamCommunity
     {
         if (!file_exists($this->getCookiesFilePath())) {
             if (file_put_contents($this->getCookiesFilePath(), '') === false) {
-                throw new SteamException("Could not create cookies file for {$this->username}.");
+                throw new \Exception("Could not create cookiefile for {$this->username}.");
             }
         }
 
@@ -129,7 +131,7 @@ class SteamCommunity
     {
         $captchaUrl = 'https://store.steampowered.com/join/';
         if (is_null($this->captchaGID)) {
-            $captchaUrlResponse = $this->cURL($captchaUrl, null, null);
+            $captchaUrlResponse = $this->cURL($captchaUrl);
             //<input type="hidden" id="captchagid" name="captchagid" value="710806085505843213" />
             $pattern = '/<input(?:.*?)id=\"captchagid\"(?:.*)value=\"([^"]+).*>/i';
             preg_match($pattern, $captchaUrlResponse, $matches);
@@ -167,7 +169,7 @@ class SteamCommunity
         return CreateAccountResult::GeneralFailure;
     }
 
-    public function cURL($url, $ref, $postData)
+    public function cURL($url, $ref = null, $postData = null)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -210,7 +212,7 @@ class SteamCommunity
 
     private function setSession()
     {
-        $response = $this->cURL('http://steamcommunity.com/', null, null);
+        $response = $this->cURL('http://steamcommunity.com/');
         $pattern = '/g_steamID = (.*);/';
         preg_match($pattern, $response, $matches);
         if (!isset($matches[1])) {
@@ -235,14 +237,6 @@ class SteamCommunity
     private function getCookiesFilePath()
     {
         return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
-    }
-
-    /**
-     * @return Market
-     */
-    public function getMarket()
-    {
-        return $this->market;
     }
 
     /**
@@ -320,5 +314,21 @@ class SteamCommunity
     public function isLoggedIn()
     {
         return $this->loggedIn;
+    }
+
+    /**
+     * @return Market
+     */
+    public function getMarket()
+    {
+        return $this->market;
+    }
+
+    /**
+     * @return TradeOffers
+     */
+    public function getTradeOffers()
+    {
+        return $this->tradeOffers;
     }
 }
