@@ -20,6 +20,7 @@ class SteamCommunity
     protected $cookieFilesDir;
 
     protected $steamId;
+    protected $sessionId;
 
     private $requiresCaptcha = false;
     private $captchaGID;
@@ -39,6 +40,9 @@ class SteamCommunity
         $this->username = $username;
         $this->password = $password;
         $this->cookieFilesDir = $cookieFilesDir;
+
+        $this->setSession();
+
         $this->market = new Market($this);
     }
 
@@ -109,7 +113,7 @@ class SteamCommunity
         } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
         } else if ($loginJson['success']) {
-            $this->steamId = $this->_getSteamId();
+            $this->setSession();
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
@@ -133,6 +137,8 @@ class SteamCommunity
                 $this->requiresCaptcha = true;
                 $this->captchaGID = $matches[1];
                 return CreateAccountResult::NeedCaptcha;
+            } else {
+                throw new SteamException('Unexpected response from Steam.');
             }
         } else {
             $createAccountUrl = 'https://store.steampowered.com/join/createaccount/';
@@ -152,7 +158,7 @@ class SteamCommunity
             if ($createAccountJson == null) {
                 return CreateAccountResult::GeneralFailure;
             } else if (isset($createAccountJson['bSuccess']) && $createAccountJson['bSuccess']) {
-                $this->steamId = $this->_getSteamId();
+                $this->setSession();
                 $this->loggedIn = true;
                 return CreateAccountResult::CreatedOkay;
             }
@@ -197,12 +203,12 @@ class SteamCommunity
     private function _isLoggedIn()
     {
         if (is_null($this->steamId)) {
-            $this->steamId = $this->_getSteamId();
+            $this->setSession();
         }
         return $this->steamId != 0;
     }
 
-    private function _getSteamId()
+    private function setSession()
     {
         $response = $this->cURL('http://steamcommunity.com/', null, null);
         $pattern = '/g_steamID = (.*);/';
@@ -210,7 +216,20 @@ class SteamCommunity
         if (!isset($matches[1])) {
             throw new SteamException('Unexpected response from Steam.');
         }
-        return str_replace('"', '', $matches[1]);
+
+        $steamId = str_replace('"', '', $matches[1]);
+        if ($steamId == 'false') {
+            $steamId = 0;
+        }
+        $this->steamId = $steamId;
+
+        $pattern = '/g_sessionID = (.*);/';
+        preg_match($pattern, $response, $matches);
+        if (!isset($matches[1])) {
+            throw new SteamException('Unexpected response from Steam.');
+        }
+
+        $this->sessionId = str_replace('"', '', $matches[1]);
     }
 
     private function getCookiesFilePath()
@@ -247,14 +266,15 @@ class SteamCommunity
      */
     public function getSteamId()
     {
-        if (is_null($this->steamId)) {
-            $steamId = $this->_getSteamId();
-            if ($steamId == 'false') {
-                $steamId = 0;
-            }
-            $this->steamId = $steamId;
-        }
         return $this->steamId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSessionId()
+    {
+        return $this->sessionId;
     }
 
     /**

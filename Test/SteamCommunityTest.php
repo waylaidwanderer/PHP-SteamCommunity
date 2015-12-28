@@ -8,9 +8,10 @@
  */
 class SteamCommunityTest extends PHPUnit_Framework_TestCase
 {
-    public function test_getSteamIdWhenNotLoggedIn()
+    public function test_setSessionWhenNotLoggedIn()
     {
         $steam = new \waylaidwanderer\SteamCommunity\SteamCommunity('', '', dirname(__FILE__));
-        $this->assertEquals(0, $steam->getSteamId());
+        $this->assertSame(0, $steam->getSteamId());
+        $this->assertNotNull($steam->getSessionId());
     }
 }
