@@ -10,6 +10,7 @@ namespace waylaidwanderer\SteamCommunity;
 
 use phpseclib\Crypt\RSA;
 use phpseclib\Math\BigInteger;
+use waylaidwanderer\SteamCommunity\Enum\CreateAccountResult;
 use waylaidwanderer\SteamCommunity\Enum\LoginResult;
 
 class SteamCommunity
@@ -91,37 +92,70 @@ class SteamCommunity
 
         $loginResponse = $this->cURL('https://steamcommunity.com/login/dologin/', null, $params);
         $loginJson = json_decode($loginResponse, true);
+
         if ($loginJson == null) {
             return LoginResult::GeneralFailure;
-        }
-
-        if (isset($loginJson['captcha_needed']) && $loginJson['captcha_needed']) {
+        } else if (isset($loginJson['captcha_needed']) && $loginJson['captcha_needed']) {
             $this->requiresCaptcha = true;
             $this->captchaGID = $loginJson['captcha_gid'];
             return LoginResult::NeedCaptcha;
-        }
-
-        if (isset($loginJson['emailauth_needed']) && $loginJson['emailauth_needed']) {
+        } else if (isset($loginJson['emailauth_needed']) && $loginJson['emailauth_needed']) {
             $this->requiresEmail = true;
             $this->steamId = $loginJson['emailsteamid'];
             return LoginResult::NeedEmail;
-        }
-
-        if (isset($loginJson['requires_twofactor']) && $loginJson['requires_twofactor'] && !$loginJson['success']) {
+        } else if (isset($loginJson['requires_twofactor']) && $loginJson['requires_twofactor'] && !$loginJson['success']) {
             $this->requires2FA = true;
             return LoginResult::Need2FA;
-        }
-
-        if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
+        } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
-        }
-
-        if ($loginJson['success']) {
+        } else if ($loginJson['success']) {
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
 
         return LoginResult::GeneralFailure;
+    }
+
+    /**
+     * @param $email
+     * @return CreateAccountResult
+     */
+    public function createAccount($email)
+    {
+        $captchaUrl = 'https://store.steampowered.com/join/';
+        if (is_null($this->captchaGID)) {
+            $captchaUrlResponse = $this->cURL($captchaUrl, null, null);
+            //<input type="hidden" id="captchagid" name="captchagid" value="710806085505843213" />
+            $pattern = '/<input(?:.*?)id=\"captchagid\"(?:.*)value=\"([^"]+).*>/i';
+            preg_match($pattern, $captchaUrlResponse, $matches);
+            if (isset($matches[1])) {
+                $this->requiresCaptcha = true;
+                $this->captchaGID = $matches[1];
+                return CreateAccountResult::NeedCaptcha;
+            }
+        } else {
+            $createAccountUrl = 'https://store.steampowered.com/join/createaccount/';
+            $params = [
+                'accountname' => $this->username,
+                'password' => $this->password,
+                'email' => $email,
+                'captchagid' => $this->captchaGID,
+                'captcha_text' => $this->captchaText,
+                'i_agree' => 1,
+                'ticket' => '',
+                'count' => 14
+            ];
+            $createAccountResponse = $this->cURL($createAccountUrl, $captchaUrl, $params);
+            $createAccountJson = json_decode($createAccountResponse, true);
+
+            if ($createAccountJson == null) {
+                return CreateAccountResult::GeneralFailure;
+            } else if (isset($createAccountJson['bSuccess']) && $createAccountJson['bSuccess']) {
+                return CreateAccountResult::CreatedOkay;
+            }
+        }
+
+        return CreateAccountResult::GeneralFailure;
     }
 
     private function _isLoggedIn()
