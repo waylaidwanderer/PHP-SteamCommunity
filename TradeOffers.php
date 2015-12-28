@@ -9,6 +9,7 @@
 namespace waylaidwanderer\SteamCommunity;
 
 
+use waylaidwanderer\SteamCommunity\TradeOffers\Trade;
 use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer;
 
 class TradeOffers
@@ -217,5 +218,81 @@ class TradeOffers
             $tradeOffers[] = $tradeOffer;
         }
         return $tradeOffers;
+    }
+
+    public function acceptTrade(TradeOffer $tradeOffer)
+    {
+        if (!$tradeOffer->isOurOffer()) {
+            $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/accept';
+            $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/';
+            $params = [
+                'sessionid' => $this->steamCommunity->getSessionId(),
+                'serverid' => '1',
+                'tradeofferid' => $tradeOffer->getTradeOfferId(),
+                'partner' => Helper::toCommunityID($tradeOffer->getOtherAccountId())
+            ];
+            $response = $this->steamCommunity->cURL($url, $referer, $params);
+            $json = json_decode($response, true);
+            if (is_null($json)) {
+                return false;
+            } else {
+                return isset($json['tradeid']);
+            }
+        }
+        return false;
+    }
+
+    public function declineTrade(TradeOffer $tradeOffer)
+    {
+        if (!$tradeOffer->isOurOffer()) {
+            return $this->declineTradeById($tradeOffer->getTradeOfferId());
+        }
+        return false;
+    }
+
+    public function declineTradeById($tradeOfferId)
+    {
+        $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/decline';
+        $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
+        $params = [
+            'sessionid' => $this->steamCommunity->getSessionId(),
+            'serverid' => '1'
+        ];
+        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $json = json_decode($response, true);
+        if (is_null($json)) {
+            return false;
+        } else {
+            return isset($json['tradeofferid']);
+        }
+    }
+
+    public function cancelTrade(TradeOffer $tradeOffer)
+    {
+        if ($tradeOffer->isOurOffer()) {
+            return $this->cancelTradeById($tradeOffer->getTradeOfferId());
+        }
+        return false;
+    }
+
+    public function cancelTradeById($tradeOfferId)
+    {
+        $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/cancel';
+        $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
+        $params = [
+            'sessionid' => $this->steamCommunity->getSessionId()
+        ];
+        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $json = json_decode($response, true);
+        if (is_null($json)) {
+            return false;
+        } else {
+            return isset($json['tradeofferid']);
+        }
+    }
+
+    public function createTrade($accountId)
+    {
+        return new Trade($this->steamCommunity, $accountId);
     }
 }

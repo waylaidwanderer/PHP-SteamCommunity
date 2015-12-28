@@ -10,7 +10,6 @@ namespace waylaidwanderer\SteamCommunity\TradeOffers;
 
 
 use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer\Item;
-use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer\State;
 
 class TradeOffer
 {

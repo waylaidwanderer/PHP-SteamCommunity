@@ -35,7 +35,10 @@ if ($loginResult == LoginResult::LoginOkay) {
     writeLine('Logged in successfully.');
 
     $tradeOffers = $steam->getTradeOffers();
-    var_dump($tradeOffers->getSentOfferHistory());
+
+    $trade = $tradeOffers->createTrade(12345);
+    $trade->addOtherItem(730, 2, 12345678);
+    var_dump($trade->send());
 } else {
     writeLine("Failed to login: {$loginResult}.");
 }
