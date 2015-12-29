@@ -13,21 +13,21 @@ use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer\Item;
 
 class TradeOffer
 {
-    protected $tradeOfferId;
-    protected $otherAccountId;
-    protected $message = '';
-    protected $expirationTime;
-    protected $tradeOfferState;
-    protected $itemsToGive;
-    protected $itemsToReceive;
-    protected $isOurOffer;
+    private $tradeOfferId;
+    private $otherAccountId;
+    private $message = '';
+    private $expirationTime;
+    private $tradeOfferState;
+    private $itemsToGive;
+    private $itemsToReceive;
+    private $isOurOffer;
 
     // TODO: figure out how to get these
-    protected $timeCreated = 0;
-    protected $timeUpdated = 0;
-    protected $fromRealTimeTrade = false;
-    protected $escrowEndDate = 0;
-    protected $confirmationMethod = 0;
+    private $timeCreated = 0;
+    private $timeUpdated = 0;
+    private $fromRealTimeTrade = false;
+    private $escrowEndDate = 0;
+    private $confirmationMethod = 0;
 
     /**
      * @return string

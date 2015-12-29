@@ -16,7 +16,7 @@ class TradeOffers
 {
     const BASE_URL = 'http://steamcommunity.com/my/tradeoffers/';
 
-    protected $steamCommunity;
+    private $steamCommunity;
 
     public function __construct(SteamCommunity $steamCommunity)
     {

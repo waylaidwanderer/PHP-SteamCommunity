@@ -11,10 +11,10 @@ namespace waylaidwanderer\SteamCommunity\TradeOffers\Trade;
 
 class TradeAsset implements \JsonSerializable
 {
-    protected $appId;
-    protected $contextId;
-    protected $assetId;
-    protected $amount;
+    private $appId;
+    private $contextId;
+    private $assetId;
+    private $amount;
 
     public function __construct($appId, $contextId, $assetId, $amount)
     {

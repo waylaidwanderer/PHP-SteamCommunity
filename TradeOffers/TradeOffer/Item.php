@@ -11,14 +11,14 @@ namespace waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer;
 
 class Item
 {
-    protected $appId;
-    protected $contextId;
-    protected $assetId;
-    protected $currencyId;
-    protected $classId;
-    protected $instanceId = 0;
-    protected $amount = 1;
-    protected $missing = false;
+    private $appId;
+    private $contextId;
+    private $assetId;
+    private $currencyId;
+    private $classId;
+    private $instanceId = 0;
+    private $amount = 1;
+    private $missing = false;
 
     /**
      * @return string

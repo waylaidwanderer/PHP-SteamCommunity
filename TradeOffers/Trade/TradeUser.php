@@ -13,10 +13,10 @@ use waylaidwanderer\SteamCommunity\TradeOffers\Trade;
 class TradeUser implements \JsonSerializable
 {
     /** @var TradeAsset[] $assets */
-    protected $assets = [];
-    protected $currency = [];
-    protected $ready = false;
-    protected $trade;
+    private $assets = [];
+    private $currency = [];
+    private $ready = false;
+    private $trade;
 
     public function __construct(Trade $trade)
     {

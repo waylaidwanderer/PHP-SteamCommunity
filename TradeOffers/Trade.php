@@ -16,12 +16,12 @@ use waylaidwanderer\SteamCommunity\TradeOffers\Trade\TradeUser;
 
 class Trade implements \JsonSerializable
 {
-    protected $newVersion = true;
-    protected $version = 1;
-    protected $me;
-    protected $them;
-    protected $steamCommunity;
-    protected $accountId;
+    private $newVersion = true;
+    private $version = 1;
+    private $me;
+    private $them;
+    private $steamCommunity;
+    private $accountId;
 
     private $message = '';
 

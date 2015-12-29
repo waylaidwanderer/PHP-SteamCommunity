@@ -43,6 +43,7 @@ if ($loginResult == LoginResult::LoginOkay) {
     */
 
     var_dump($steam->getMarket()->getWalletBalance());
+    var_dump($steam->getApiKey());
 } else {
     writeLine("Failed to login: {$loginResult}.");
 }

@@ -15,12 +15,15 @@ use waylaidwanderer\SteamCommunity\Enum\LoginResult;
 
 class SteamCommunity
 {
-    protected $username;
-    protected $password;
-    protected $cookieFilesDir;
+    private $username;
+    private $password;
+    private $cookieFilesDir;
 
-    protected $steamId;
-    protected $sessionId;
+    private $apiKey;
+    private $apiKeyDomain;
+
+    private $steamId;
+    private $sessionId;
 
     private $requiresCaptcha = false;
     private $captchaGID;
@@ -34,13 +37,14 @@ class SteamCommunity
 
     private $loggedIn = false;
 
-    protected $market;
-    protected $tradeOffers;
+    private $market;
+    private $tradeOffers;
 
-    public function __construct($username = '', $password = '', $cookieFilesDir = '/') {
+    public function __construct($username = '', $password = '', $cookieFilesDir = '/', $apiKeyDomain = '') {
         $this->username = $username;
         $this->password = $password;
         $this->cookieFilesDir = $cookieFilesDir;
+        $this->apiKeyDomain = $apiKeyDomain;
 
         $this->setSession();
 
@@ -242,11 +246,52 @@ class SteamCommunity
         }
 
         $this->sessionId = str_replace('"', '', $matches[1]);
+
+        $this->_setApiKey();
     }
 
     private function getCookiesFilePath()
     {
         return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
+    }
+
+    private function _setApiKey()
+    {
+        $url = 'https://steamcommunity.com/dev/apikey';
+        $response = $this->cURL($url);
+        if (preg_match('/<h2>Access Denied<\/h2>/', $response)) {
+            $this->apiKey = '';
+        } else if (preg_match('/<p>Key: (.*)<\/p>/', $response, $matches)) {
+            $this->apiKey = $matches[1];
+        } else if (!empty($this->apiKeyDomain)) {
+            $registerUrl = 'https://steamcommunity.com/dev/registerkey';
+            $params = [
+                'domain' => $this->apiKeyDomain,
+                'agreeToTerms' => 'agreed',
+                'sessionid' => $this->sessionId,
+                'Submit' => 'Register'
+            ];
+            $this->cURL($registerUrl, $url, $params);
+            $this->_setApiKey();
+        } else {
+            $this->apiKey = '';
+        }
+    }
+
+    /**
+     * In most cases, you don't need to call this since an API key is registered automatically upon logging in as long as you have set the domain first.
+     * @param string $domain
+     * @return string
+     * @throws SteamException
+     */
+    public function registerApiKey($domain = '')
+    {
+        $this->apiKeyDomain = $domain;
+        $this->_setApiKey();
+        if (empty($this->apiKey)) {
+            throw new SteamException('Could not register API key.');
+        }
+        return $this->apiKey;
     }
 
     /**
@@ -263,6 +308,23 @@ class SteamCommunity
     public function getPassword()
     {
         return $this->password;
+    }
+
+    /**
+     * @return string
+     */
+    public function getApiKey()
+    {
+        return $this->apiKey;
+    }
+
+    /**
+     * Set this before logging in if you want an API key to be automatically registered.
+     * @param string $apiKeyDomain
+     */
+    public function setApiKeyDomain($apiKeyDomain)
+    {
+        $this->apiKeyDomain = $apiKeyDomain;
     }
 
     /**
@@ -289,12 +351,17 @@ class SteamCommunity
         return $this->captchaGID;
     }
 
+    /**
+     * Use this to get the captcha image.
+     * @return string
+     */
     public function getCaptchaLink()
     {
         return 'https://steamcommunity.com/public/captcha.php?gid=' . $this->captchaGID;
     }
 
     /**
+     * Set this after a captcha is encountered when logging in or creating an account.
      * @param string $captchaText
      */
     public function setCaptchaText($captchaText)
@@ -303,6 +370,7 @@ class SteamCommunity
     }
 
     /**
+     * Set this after email auth is required when logging in.
      * @param string $emailCode
      */
     public function setEmailCode($emailCode)
@@ -311,6 +379,7 @@ class SteamCommunity
     }
 
     /**
+     * Set this after 2FA is required when logging in.
      * @param string $twoFactorCode
      */
     public function setTwoFactorCode($twoFactorCode)
@@ -327,6 +396,7 @@ class SteamCommunity
     }
 
     /**
+     * Returns an instance of the Market class.
      * @return Market
      */
     public function getMarket()
@@ -335,6 +405,7 @@ class SteamCommunity
     }
 
     /**
+     * Returns an instance of the TradeOffers class.
      * @return TradeOffers
      */
     public function getTradeOffers()

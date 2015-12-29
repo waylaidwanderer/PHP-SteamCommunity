@@ -15,7 +15,7 @@ use waylaidwanderer\SteamCommunity\Market\PriceOverview;
 
 class Market
 {
-    protected $steamCommunity;
+    private $steamCommunity;
 
     public function __construct(SteamCommunity $steamCommunity = null)
     {
