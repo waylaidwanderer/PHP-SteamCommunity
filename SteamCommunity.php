@@ -46,7 +46,7 @@ class SteamCommunity
         $this->cookieFilesDir = $cookieFilesDir;
         $this->apiKeyDomain = $apiKeyDomain;
 
-        $this->setSession();
+        $this->_setSession();
 
         $this->market = new Market($this);
         $this->tradeOffers = new TradeOffers($this);
@@ -59,8 +59,8 @@ class SteamCommunity
      */
     public function doLogin()
     {
-        if (!file_exists($this->getCookiesFilePath())) {
-            if (file_put_contents($this->getCookiesFilePath(), '') === false) {
+        if (!file_exists($this->_getCookiesFilePath())) {
+            if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
                 throw new \Exception("Could not create cookiefile for {$this->username}.");
             }
         }
@@ -120,7 +120,7 @@ class SteamCommunity
         } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
         } else if ($loginJson['success']) {
-            $this->setSession();
+            $this->_setSession();
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
@@ -151,8 +151,8 @@ class SteamCommunity
                 throw new SteamException('Unexpected response from Steam.');
             }
         } else {
-            if (!file_exists($this->getCookiesFilePath())) {
-                if (file_put_contents($this->getCookiesFilePath(), '') === false) {
+            if (!file_exists($this->_getCookiesFilePath())) {
+                if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
                     throw new \Exception("Could not create cookiefile for {$this->username}.");
                 }
             }
@@ -174,7 +174,7 @@ class SteamCommunity
             if ($createAccountJson == null) {
                 return CreateAccountResult::GeneralFailure;
             } else if (isset($createAccountJson['bSuccess']) && $createAccountJson['bSuccess']) {
-                $this->setSession();
+                $this->_setSession();
                 $this->loggedIn = true;
                 return CreateAccountResult::CreatedOkay;
             }
@@ -190,8 +190,8 @@ class SteamCommunity
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->getCookiesFilePath());
-        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->getCookiesFilePath());
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookiesFilePath());
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookiesFilePath());
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
@@ -219,12 +219,12 @@ class SteamCommunity
     private function _isLoggedIn()
     {
         if (is_null($this->steamId)) {
-            $this->setSession();
+            $this->_setSession();
         }
         return $this->steamId != 0;
     }
 
-    private function setSession()
+    private function _setSession()
     {
         $response = $this->cURL('http://steamcommunity.com/');
         $pattern = '/g_steamID = (.*);/';
@@ -250,7 +250,7 @@ class SteamCommunity
         $this->_setApiKey();
     }
 
-    private function getCookiesFilePath()
+    private function _getCookiesFilePath()
     {
         return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
     }
