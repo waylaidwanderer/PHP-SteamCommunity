@@ -32,7 +32,7 @@ class Helper
      * @param $id
      * @return string
      */
-    function toAccountID($id) {
+    public static function toAccountID($id) {
         if (preg_match('/^STEAM_/', $id)) {
             $split = explode(':', $id);
             return $split[2] * 2 + $split[1];
@@ -41,5 +41,23 @@ class Helper
         } else {
             return $id; // We have no idea what this is, so just return it.
         }
+    }
+
+    /**
+     * @link https://github.com/mcuadros/currency-detector/blob/master/src/CurrencyDetector/Detector.php#L62
+     * @param $money
+     * @return float
+     */
+    public static function getAmount($money)
+    {
+        $cleanString = preg_replace('/([^0-9\.,])/i', '', $money);
+        $onlyNumbersString = preg_replace('/([^0-9])/i', '', $money);
+
+        $separatorsCountToBeErased = strlen($cleanString) - strlen($onlyNumbersString) - 1;
+
+        $stringWithCommaOrDot = preg_replace('/([,\.])/', '', $cleanString, $separatorsCountToBeErased);
+        $removedThousendSeparator = preg_replace('/(\.|,)(?=[0-9]{3,}$)/', '',  $stringWithCommaOrDot);
+
+        return (float) str_replace(',', '.', $removedThousendSeparator);
     }
 }

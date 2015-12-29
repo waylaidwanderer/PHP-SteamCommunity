@@ -36,9 +36,13 @@ if ($loginResult == LoginResult::LoginOkay) {
 
     $tradeOffers = $steam->getTradeOffers();
 
+    /*
     $trade = $tradeOffers->createTrade(12345);
     $trade->addOtherItem(730, 2, 12345678);
     var_dump($trade->send());
+    */
+
+    var_dump($steam->getMarket()->getWalletBalance());
 } else {
     writeLine("Failed to login: {$loginResult}.");
 }

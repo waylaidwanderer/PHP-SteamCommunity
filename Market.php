@@ -84,4 +84,25 @@ class Market
             throw new SteamException("Could not retrieve listings for item {$marketHashName} ({$appId}) from Steam (2).");
         }
     }
+
+    public function getWalletBalance()
+    {
+        if ($this->steamCommunity->isLoggedIn()) {
+            $url = 'http://steamcommunity.com/market/';
+            $response = $this->steamCommunity->cURL($url);
+
+            $pattern = '/<span id=\"marketWalletBalanceAmount\">(.*)<\/span>/i';
+            preg_match($pattern, $response, $matches);
+            if (!isset($matches[1])) {
+                throw new SteamException('Unexpected response from Steam.');
+            }
+            $balance = $matches[1];
+            if (substr($balance, -1) == '.') {
+                $balance = substr($balance, 0, -1);
+            }
+            return Helper::getAmount($balance);
+        } else {
+            return 0;
+        }
+    }
 }
