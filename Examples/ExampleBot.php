@@ -26,7 +26,7 @@ while ($loginResult != LoginResult::LoginOkay) {
         $authCode = ask('Enter Steam Guard code from email: ');
         $steam->setEmailCode($authCode);
         $loginResult = $steam->doLogin();
-    } else if ($loginResult == LoginResult::GeneralFailure) {
+    } else {
         break;
     }
 }
