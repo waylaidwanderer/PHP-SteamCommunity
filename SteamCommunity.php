@@ -37,7 +37,7 @@ class SteamCommunity
     protected $market;
     protected $tradeOffers;
 
-    public function __construct($username, $password, $cookieFilesDir) {
+    public function __construct($username = '', $password = '', $cookieFilesDir = '/') {
         $this->username = $username;
         $this->password = $password;
         $this->cookieFilesDir = $cookieFilesDir;
@@ -49,6 +49,7 @@ class SteamCommunity
     }
 
     /**
+     * Login with the set username and password.
      * @return LoginResult
      * @throws \Exception
      */
@@ -124,8 +125,11 @@ class SteamCommunity
     }
 
     /**
+     * Create a new Steam account.
      * @param $email
      * @return CreateAccountResult
+     * @throws SteamException
+     * @throws \Exception
      */
     public function createAccount($email)
     {
@@ -143,6 +147,12 @@ class SteamCommunity
                 throw new SteamException('Unexpected response from Steam.');
             }
         } else {
+            if (!file_exists($this->getCookiesFilePath())) {
+                if (file_put_contents($this->getCookiesFilePath(), '') === false) {
+                    throw new \Exception("Could not create cookiefile for {$this->username}.");
+                }
+            }
+
             $createAccountUrl = 'https://store.steampowered.com/join/createaccount/';
             $params = [
                 'accountname' => $this->username,

@@ -13,9 +13,9 @@ class Market
 {
     protected $steamCommunity;
 
-    public function __construct(SteamCommunity $steamCommunity)
+    public function __construct(SteamCommunity $steamCommunity = null)
     {
-        $this->steamCommunity = $steamCommunity;
+        $this->steamCommunity = is_null($steamCommunity) ? new SteamCommunity() : $steamCommunity;
     }
 
     public function getRecentCompleted()
