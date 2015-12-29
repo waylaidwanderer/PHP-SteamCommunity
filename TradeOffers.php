@@ -220,6 +220,11 @@ class TradeOffers
         return $tradeOffers;
     }
 
+    /**
+     * Accept a trade offer.
+     * @param TradeOffer $tradeOffer
+     * @return bool
+     */
     public function acceptTrade(TradeOffer $tradeOffer)
     {
         if (!$tradeOffer->isOurOffer()) {
@@ -242,6 +247,11 @@ class TradeOffers
         return false;
     }
 
+    /**
+     * Decline a trade offer.
+     * @param TradeOffer $tradeOffer
+     * @return bool
+     */
     public function declineTrade(TradeOffer $tradeOffer)
     {
         if (!$tradeOffer->isOurOffer()) {
@@ -250,6 +260,11 @@ class TradeOffers
         return false;
     }
 
+    /**
+     * Decline a trade offer by its id.
+     * @param $tradeOfferId
+     * @return bool
+     */
     public function declineTradeById($tradeOfferId)
     {
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/decline';
@@ -267,6 +282,11 @@ class TradeOffers
         }
     }
 
+    /**
+     * Cancel a trade offer.
+     * @param TradeOffer $tradeOffer
+     * @return bool
+     */
     public function cancelTrade(TradeOffer $tradeOffer)
     {
         if ($tradeOffer->isOurOffer()) {
@@ -275,6 +295,11 @@ class TradeOffers
         return false;
     }
 
+    /**
+     * Cancel a trade offer by its id.
+     * @param string $tradeOfferId
+     * @return bool
+     */
     public function cancelTradeById($tradeOfferId)
     {
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/cancel';
@@ -291,6 +316,11 @@ class TradeOffers
         }
     }
 
+    /**
+     * Shortcut for creating a new trade offer with a user.
+     * @param mixed $accountId Account ID of the user you want to create a trade with.
+     * @return Trade
+     */
     public function createTrade($accountId)
     {
         return new Trade($this->steamCommunity, $accountId);
