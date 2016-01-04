@@ -55,7 +55,8 @@ class SteamCommunity
     /**
      * Login with the set username and password.
      * @return LoginResult
-     * @throws \Exception
+     * @throws SteamException Thrown when Steam gives an unexpected response (e.g. Steam is down/having issues)
+     * @throws \Exception Thrown when cookiefile is unable to be created.
      */
     public function doLogin()
     {
@@ -132,8 +133,8 @@ class SteamCommunity
      * Create a new Steam account.
      * @param $email
      * @return CreateAccountResult
-     * @throws SteamException
-     * @throws \Exception
+     * @throws SteamException Thrown when Steam gives an unexpected response (e.g. Steam is down/having issues)
+     * @throws \Exception Thrown when cookiefile is unable to be created.
      */
     public function createAccount($email)
     {
@@ -282,7 +283,7 @@ class SteamCommunity
      * In most cases, you don't need to call this since an API key is registered automatically upon logging in as long as you have set the domain first.
      * @param string $domain
      * @return string
-     * @throws SteamException
+     * @throws SteamException Thrown when Steam gives an unexpected response (e.g. Steam is down/having issues)
      */
     public function registerApiKey($domain = '')
     {
