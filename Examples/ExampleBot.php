@@ -38,7 +38,7 @@ if ($loginResult == LoginResult::LoginOkay) {
 
     /*
     $trade = $tradeOffers->createTrade(12345);
-    $trade->addOtherItem(730, 2, 12345678);
+    $trade->addOtherItem(730, 2, "12345678");
     var_dump($trade->send());
     */
 
