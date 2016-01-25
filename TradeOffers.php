@@ -231,17 +231,17 @@ class TradeOffers
             $url .= '&active_only=0';
         }
         $response = $this->steamCommunity->cURL($url);
-        $json = json_decode($response, true);
+        $json = json_decode(mb_convert_encoding($response, 'UTF-8', 'UTF-8'), true);
         if (isset($json['response'])) {
             if (isset($json['response']['trade_offers_sent'])) {
                 foreach ($json['response']['trade_offers_sent'] as $tradeOffer) {
-
+                    $tradeOffers['sent'][] = $tradeOffer;
                 }
             }
 
             if (isset($json['response']['trade_offers_received'])) {
                 foreach ($json['response']['trade_offers_received'] as $tradeOffer) {
-
+                    $tradeOffers['received'][] = $tradeOffer;
                 }
             }
         }
@@ -253,9 +253,9 @@ class TradeOffers
     {
         $url = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/?key={$this->steamCommunity->getApiKey()}&tradeofferid={$tradeOfferId}&language=en_us";
         $response = $this->steamCommunity->cURL($url);
-        $json = json_decode($response, true);
+        $json = json_decode(mb_convert_encoding($response, 'UTF-8', 'UTF-8'), true);
         if (isset($json['response']) && isset($json['response']['offer'])) {
-
+            return $json['response']['offer'];
         }
         return null;
     }
