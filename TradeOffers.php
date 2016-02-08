@@ -235,13 +235,13 @@ class TradeOffers
         if (isset($json['response'])) {
             if (isset($json['response']['trade_offers_sent'])) {
                 foreach ($json['response']['trade_offers_sent'] as $tradeOffer) {
-
+                    $tradeOffers[] = new TradeOffer($tradeOffer);
                 }
             }
 
             if (isset($json['response']['trade_offers_received'])) {
                 foreach ($json['response']['trade_offers_received'] as $tradeOffer) {
-
+                    $tradeOffers[] = new TradeOffer($tradeOffer);
                 }
             }
         }
@@ -255,7 +255,7 @@ class TradeOffers
         $response = $this->steamCommunity->cURL($url);
         $json = json_decode($response, true);
         if (isset($json['response']) && isset($json['response']['offer'])) {
-
+            return new TradeOffer($json['response']['offer']);
         }
         return null;
     }

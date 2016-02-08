@@ -20,6 +20,31 @@ class Item
     private $amount = 1;
     private $missing = false;
 
+    public function __construct($json = [])
+    {
+        if (isset($json['appid'])) {
+            $this->appId = $json['appid'];
+        }
+        if (isset($json['contextid'])) {
+            $this->contextId = $json['contextid'];
+        }
+        if (isset($json['assetid'])) {
+            $this->contextId = $json['assetid'];
+        }
+        if (isset($json['classid'])) {
+            $this->classId = $json['classid'];
+        }
+        if (isset($json['instanceid'])) {
+            $this->instanceId = $json['instanceid'];
+        }
+        if (isset($json['amount'])) {
+            $this->amount = $json['amount'];
+        }
+        if (isset($json['missing'])) {
+            $this->missing = $json['missing'];
+        }
+    }
+
     /**
      * @return string
      */

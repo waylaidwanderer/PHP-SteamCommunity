@@ -21,13 +21,65 @@ class TradeOffer
     private $itemsToGive;
     private $itemsToReceive;
     private $isOurOffer;
-
-    // TODO: figure out how to get these
     private $timeCreated = 0;
     private $timeUpdated = 0;
+    private $tradeId = 0;
     private $fromRealTimeTrade = false;
     private $escrowEndDate = 0;
     private $confirmationMethod = 0;
+
+    public function __construct($json = [])
+    {
+        if (isset($json['tradeofferid'])) {
+            $this->tradeOfferId = $json['tradeofferid'];
+        }
+        if (isset($json['accountid_other'])) {
+            $this->otherAccountId = $json['accountid_other'];
+        }
+        if (isset($json['message'])) {
+            $this->message = $json['message'];
+        }
+        if (isset($json['trade_offer_state'])) {
+            $this->tradeOfferState = $json['trade_offer_state'];
+        }
+        if (isset($json['items_to_receive'])) {
+            $this->itemsToReceive = [];
+            if (is_array($json['items_to_receive'])) {
+                foreach ($json['items_to_receive'] as $item) {
+                    $this->itemsToReceive[] = new Item($item);
+                }
+            }
+        }
+        if (isset($json['items_to_give'])) {
+            $this->itemsToGive = [];
+            if (is_array($json['items_to_give'])) {
+                foreach ($json['items_to_give'] as $item) {
+                    $this->itemsToGive[] = new Item($item);
+                }
+            }
+        }
+        if (isset($json['is_our_offer'])) {
+            $this->isOurOffer = $json['is_our_offer'];
+        }
+        if (isset($json['time_created'])) {
+            $this->timeCreated = $json['time_created'];
+        }
+        if (isset($json['time_updated'])) {
+            $this->timeUpdated = $json['time_updated'];
+        }
+        if (isset($json['tradeid'])) {
+            $this->tradeId = $json['tradeid'];
+        }
+        if (isset($json['from_real_time_trade'])) {
+            $this->fromRealTimeTrade = $json['from_real_time_trade'];
+        }
+        if (isset($json['escrow_end_date'])) {
+            $this->fromRealTimeTrade = $json['escrow_end_date'];
+        }
+        if (isset($json['confirmation_method'])) {
+            $this->confirmationMethod = $json['confirmation_method'];
+        }
+    }
 
     /**
      * @return string
