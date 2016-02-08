@@ -74,7 +74,7 @@ class TradeOffer
             $this->fromRealTimeTrade = $json['from_real_time_trade'];
         }
         if (isset($json['escrow_end_date'])) {
-            $this->fromRealTimeTrade = $json['escrow_end_date'];
+            $this->escrowEndDate = $json['escrow_end_date'];
         }
         if (isset($json['confirmation_method'])) {
             $this->confirmationMethod = $json['confirmation_method'];
