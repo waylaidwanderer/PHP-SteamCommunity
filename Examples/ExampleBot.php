@@ -8,14 +8,20 @@ use waylaidwanderer\SteamCommunity\SteamCommunity;
 
 date_default_timezone_set('America/Los_Angeles');
 
-$settings = json_decode(file_get_contents('settings.json'));
+$settings = json_decode(file_get_contents('settings.json'), true);
 
-$steam = new SteamCommunity($settings->username, $settings->password, dirname(__FILE__).$settings->cookieFilesDir);
+$steam = new SteamCommunity($settings, dirname(__FILE__));
 $loginResult = $steam->doLogin();
 while ($loginResult != LoginResult::LoginOkay) {
     if ($loginResult == LoginResult::Need2FA) {
-        $authCode = ask('Enter 2FA code: ');
-        $steam->setTwoFactorCode($authCode);
+        if ($steam->getSteamGuard() == null) {
+            $authCode = ask('Enter 2FA code: ');
+            $steam->setTwoFactorCode($authCode);
+        } else {
+            $authCode = $steam->getSteamGuard()->GenerateSteamGuardCode();
+            $steam->setTwoFactorCode($authCode);
+            writeLine('Generated Steam Guard code: ' . $authCode);
+        }
         $loginResult = $steam->doLogin();
     } else if ($loginResult == LoginResult::NeedEmail) {
         $authCode = ask('Enter Steam Guard code from email: ');
@@ -24,6 +30,7 @@ while ($loginResult != LoginResult::LoginOkay) {
     } else {
         break;
     }
+    writeLine("Login result: {$loginResult}.");
 }
 
 if ($loginResult == LoginResult::LoginOkay) {

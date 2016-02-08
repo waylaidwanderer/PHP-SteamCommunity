@@ -1,5 +1,6 @@
 {
-  "cookieFilesDir": "/cookiefiles",
   "username": "",
-  "password": ""
+  "password": "",
+  "apiKeyDomain": "",
+  "sharedSecret": ""
 }

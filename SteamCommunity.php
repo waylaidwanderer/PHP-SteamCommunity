@@ -12,15 +12,17 @@ use phpseclib\Crypt\RSA;
 use phpseclib\Math\BigInteger;
 use waylaidwanderer\SteamCommunity\Enum\CreateAccountResult;
 use waylaidwanderer\SteamCommunity\Enum\LoginResult;
+use waylaidwanderer\SteamCommunity\MobileAuth\SteamGuard;
 
 class SteamCommunity
 {
-    private $username;
-    private $password;
-    private $cookieFilesDir;
+    private $username = '';
+    private $password = '';
+    private $cookieFilesDir = '';
+    private $steamGuard;
 
+    private $apiKeyDomain = '';
     private $apiKey;
-    private $apiKeyDomain;
 
     private $steamId;
     private $sessionId;
@@ -40,11 +42,20 @@ class SteamCommunity
     private $market;
     private $tradeOffers;
 
-    public function __construct($username = '', $password = '', $cookieFilesDir = '/', $apiKeyDomain = '') {
-        $this->username = $username;
-        $this->password = $password;
+    public function __construct($settings = [], $cookieFilesDir = '') {
+        if (isset($settings['username'])) {
+            $this->username = $settings['username'];
+        }
+        if (isset($settings['password'])) {
+            $this->password = $settings['password'];
+        }
+        if (isset($settings['apiKeyDomain'])) {
+            $this->apiKeyDomain = $settings['apiKeyDomain'];
+        }
+        if (isset($settings['sharedSecret']) && !empty($settings['sharedSecret'])) {
+            $this->steamGuard = new SteamGuard($settings['sharedSecret']);
+        }
         $this->cookieFilesDir = $cookieFilesDir;
-        $this->apiKeyDomain = $apiKeyDomain;
 
         $this->_setSession();
 
@@ -60,7 +71,7 @@ class SteamCommunity
      */
     public function doLogin()
     {
-        if (!file_exists($this->_getCookiesFilePath())) {
+        if (!empty($this->cookieFilesDir) && !file_exists($this->_getCookiesFilePath())) {
             if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
                 throw new \Exception("Could not create cookiefile for {$this->username}.");
             }
@@ -141,7 +152,6 @@ class SteamCommunity
         $captchaUrl = 'https://store.steampowered.com/join/';
         if (is_null($this->captchaGID)) {
             $captchaUrlResponse = $this->cURL($captchaUrl);
-            //<input type="hidden" id="captchagid" name="captchagid" value="710806085505843213" />
             $pattern = '/<input(?:.*?)id=\"captchagid\"(?:.*)value=\"([^"]+).*>/i';
             preg_match($pattern, $captchaUrlResponse, $matches);
             if (isset($matches[1])) {
@@ -152,7 +162,7 @@ class SteamCommunity
                 throw new SteamException('Unexpected response from Steam.');
             }
         } else {
-            if (!file_exists($this->_getCookiesFilePath())) {
+            if (!empty($this->cookieFilesDir) && !file_exists($this->_getCookiesFilePath())) {
                 if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
                     throw new \Exception("Could not create cookiefile for {$this->username}.");
                 }
@@ -191,8 +201,10 @@ class SteamCommunity
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookiesFilePath());
-        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookiesFilePath());
+        if (!empty($this->cookieFilesDir)) {
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookiesFilePath());
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookiesFilePath());
+        }
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
@@ -253,7 +265,8 @@ class SteamCommunity
 
     private function _getCookiesFilePath()
     {
-        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
+        if (empty($this->cookieFilesDir)) return '';
+        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.'cookiefiles'.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
     }
 
     private function _setApiKey()
@@ -412,5 +425,13 @@ class SteamCommunity
     public function getTradeOffers()
     {
         return $this->tradeOffers;
+    }
+
+    /**
+     * @return SteamGuard
+     */
+    public function getSteamGuard()
+    {
+        return $this->steamGuard;
     }
 }
