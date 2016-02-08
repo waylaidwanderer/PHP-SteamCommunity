@@ -29,7 +29,7 @@ class Item
             $this->contextId = $json['contextid'];
         }
         if (isset($json['assetid'])) {
-            $this->contextId = $json['assetid'];
+            $this->assetId = $json['assetid'];
         }
         if (isset($json['classid'])) {
             $this->classId = $json['classid'];
