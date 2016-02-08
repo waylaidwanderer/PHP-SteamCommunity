@@ -71,11 +71,7 @@ class SteamCommunity
      */
     public function doLogin()
     {
-        if (!empty($this->cookieFilesDir) && !file_exists($this->_getCookiesFilePath())) {
-            if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
-                throw new \Exception("Could not create cookiefile for {$this->username}.");
-            }
-        }
+        $this->_createCookieFile();
 
         if ($this->_isLoggedIn()) {
             $this->loggedIn = true;
@@ -162,11 +158,7 @@ class SteamCommunity
                 throw new SteamException('Unexpected response from Steam.');
             }
         } else {
-            if (!empty($this->cookieFilesDir) && !file_exists($this->_getCookiesFilePath())) {
-                if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
-                    throw new \Exception("Could not create cookiefile for {$this->username}.");
-                }
-            }
+            $this->_createCookieFile();
 
             $createAccountUrl = 'https://store.steampowered.com/join/createaccount/';
             $params = [
@@ -263,10 +255,30 @@ class SteamCommunity
         $this->_setApiKey();
     }
 
+    private function _getCookiesFileDir()
+    {
+        if (empty($this->cookieFilesDir)) return '';
+        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.'cookiefiles';
+    }
+
     private function _getCookiesFilePath()
     {
         if (empty($this->cookieFilesDir)) return '';
-        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.'cookiefiles'.DIRECTORY_SEPARATOR.$this->username.".cookiefile";
+        return $this->_getCookiesFileDir().DIRECTORY_SEPARATOR.$this->username.".cookiefile";
+    }
+
+    private function _createCookieFile()
+    {
+        if (!empty($this->cookieFilesDir)) {
+            if (!file_exists($this->_getCookiesFileDir())) {
+                mkdir($this->_getCookiesFileDir(), 0777, true);
+            }
+            if (!file_exists($this->_getCookiesFilePath())) {
+                if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
+                    throw new \Exception("Could not create cookiefile for {$this->username}.");
+                }
+            }
+        }
     }
 
     private function _setApiKey()
