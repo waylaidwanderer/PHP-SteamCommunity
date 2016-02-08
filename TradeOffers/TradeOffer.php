@@ -122,6 +122,7 @@ class TradeOffer
     }
 
     /**
+     * Limited to 128 chars. Will not be displayed if this limit is exceeded.
      * @param string $message
      */
     public function setMessage($message)
