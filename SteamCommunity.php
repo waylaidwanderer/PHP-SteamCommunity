@@ -200,16 +200,13 @@ class SteamCommunity
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
-        if ($ref)
-        {
+        if (isset($ref)) {
             curl_setopt($ch, CURLOPT_REFERER, $ref);
         }
-        if ($postData)
-        {
+        if (isset($postData)) {
             curl_setopt($ch, CURLOPT_POST, true);
             $postStr = "";
-            foreach ($postData as $key => $value)
-            {
+            foreach ($postData as $key => $value) {
                 if ($postStr)
                     $postStr .= "&";
                 $postStr .= $key . "=" . $value;
