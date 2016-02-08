@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Joel
- * Date: 2015-12-28
- * Time: 2:25 AM
- */
 
 require '../vendor/autoload.php';
+defined('STDIN') or define('STDIN', fopen("php://stdin","r"));
 
 use waylaidwanderer\SteamCommunity\Enum\LoginResult;
 use waylaidwanderer\SteamCommunity\SteamCommunity;
@@ -38,7 +33,7 @@ if ($loginResult == LoginResult::LoginOkay) {
 
     /*
     $trade = $tradeOffers->createTrade(12345);
-    $trade->addOtherItem(730, 2, 12345678);
+    $trade->addOtherItem(730, 2, "12345678");
     var_dump($trade->send());
     */
 
