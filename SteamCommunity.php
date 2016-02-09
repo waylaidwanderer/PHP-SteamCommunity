@@ -12,14 +12,18 @@ use phpseclib\Crypt\RSA;
 use phpseclib\Math\BigInteger;
 use waylaidwanderer\SteamCommunity\Enum\CreateAccountResult;
 use waylaidwanderer\SteamCommunity\Enum\LoginResult;
-use waylaidwanderer\SteamCommunity\MobileAuth\SteamGuard;
+use waylaidwanderer\SteamCommunity\MobileAuth\MobileAuth;
 
 class SteamCommunity
 {
+    const DEFAULT_MOBILE_COOKIES = ['mobileClientVersion' => '0 (2.1.3)', 'mobileClient' => 'android', 'Steam_Language' => 'english', 'dob' => ''];
+
     private $username = '';
     private $password = '';
-    private $cookieFilesDir = '';
-    private $steamGuard;
+    private $rootDir = '';
+    private $mobile = false;
+
+    private $mobileAuth;
 
     private $apiKeyDomain = '';
     private $apiKey;
@@ -42,7 +46,13 @@ class SteamCommunity
     private $market;
     private $tradeOffers;
 
-    public function __construct($settings = [], $cookieFilesDir = '') {
+    /**
+     * SteamCommunity constructor.
+     * @param array $settings An array containing the account's information.
+     * @param string $rootDir The absolute path of the cookiefiles/authfiles directory root.
+     * @param bool $mobile
+     */
+    public function __construct($settings = [], $rootDir = '', $mobile = false) {
         if (isset($settings['username'])) {
             $this->username = $settings['username'];
         }
@@ -52,28 +62,42 @@ class SteamCommunity
         if (isset($settings['apiKeyDomain'])) {
             $this->apiKeyDomain = $settings['apiKeyDomain'];
         }
-        if (isset($settings['sharedSecret']) && !empty($settings['sharedSecret'])) {
-            $this->steamGuard = new SteamGuard($settings['sharedSecret']);
+        if (isset($settings['mobileAuth'])) {
+            $this->mobileAuth = new MobileAuth($settings['mobileAuth'], new SteamCommunity([
+                'username' => $settings['username'],
+                'password' => $settings['password']
+            ], $rootDir, true));
         }
-        $this->cookieFilesDir = $cookieFilesDir;
+        $this->rootDir = $rootDir;
+        $this->mobile = $mobile;
 
         $this->_setSession();
 
-        $this->market = new Market($this);
-        $this->tradeOffers = new TradeOffers($this);
+        if (!$mobile) {
+            $this->market = new Market($this);
+            $this->tradeOffers = new TradeOffers($this);
+        }
     }
 
     /**
      * Login with the set username and password.
+     * @param bool $mobile Set to true to login as a mobile user.
      * @return LoginResult
      * @throws SteamException Thrown when Steam gives an unexpected response (e.g. Steam is down/having issues)
      * @throws \Exception Thrown when cookiefile is unable to be created.
      */
-    public function doLogin()
+    public function doLogin($mobile = false)
     {
+        $this->mobile = $mobile;
+        if ($this->mobileAuth != null) {
+            $this->_createAuthFile();
+        }
         $this->_createCookieFile();
 
         if ($this->_isLoggedIn()) {
+            if ($this->mobileAuth != null) {
+                $this->mobileAuth->setOauth(file_get_contents($this->getAuthFilePath()));
+            }
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
@@ -108,6 +132,11 @@ class SteamCommunity
             'rsatimestamp' => $rsaJson['timestamp'],
             'remember_login' => 'false'
         ];
+        if ($mobile) {
+            $params['oauth_client_id'] = 'DE45CD61';
+            $params['oauth_scope'] = 'read_profile write_profile read_client write_client';
+            $params['loginfriendlyname'] = '#login_emailauth_friendlyname_mobile';
+        }
 
         $loginResponse = $this->cURL('https://steamcommunity.com/login/dologin/', null, $params);
         $loginJson = json_decode($loginResponse, true);
@@ -128,6 +157,9 @@ class SteamCommunity
         } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
         } else if ($loginJson['success']) {
+            if (isset($loginJson['oauth'])) {
+                file_put_contents($this->getAuthFilePath(), $loginJson['oauth']);
+            }
             $this->_setSession();
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
@@ -193,13 +225,19 @@ class SteamCommunity
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        if (!empty($this->cookieFilesDir)) {
-            curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookiesFilePath());
-            curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookiesFilePath());
+        if (!empty($this->rootDir)) {
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookieFilePath());
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookieFilePath());
         }
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
+        if ($this->mobile) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Requested-With: com.valvesoftware.android.steam.community"]);
+            curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30");
+            curl_setopt($ch, CURLOPT_COOKIE, $this->buildCookie(self::DEFAULT_MOBILE_COOKIES));
+        } else {
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
+        }
         if (isset($ref)) {
             curl_setopt($ch, CURLOPT_REFERER, $ref);
         }
@@ -216,6 +254,14 @@ class SteamCommunity
         $output = curl_exec($ch);
         curl_close($ch);
         return $output;
+    }
+
+    private function buildCookie($cookie) {
+        $out = "";
+        foreach ($cookie as $k => $c) {
+            $out .= "{$k}={$c}; ";
+        }
+        return $out;
     }
 
     private function _isLoggedIn()
@@ -248,34 +294,65 @@ class SteamCommunity
         }
 
         $this->sessionId = str_replace('"', '', $matches[1]);
-
         $this->_setApiKey();
+        if ($this->mobileAuth != null) {
+            $this->mobileAuth->startMobileSession();
+        }
     }
 
-    private function _getCookiesFileDir()
+    private function _getFileDir($dir)
     {
-        if (empty($this->cookieFilesDir)) return '';
-        return $this->cookieFilesDir.DIRECTORY_SEPARATOR.'cookiefiles';
+        if (empty($this->rootDir)) return '';
+        return $this->rootDir.DIRECTORY_SEPARATOR.$dir;
     }
 
-    private function _getCookiesFilePath()
+    private function _getFilePath($dir, $name, $ext)
     {
-        if (empty($this->cookieFilesDir)) return '';
-        return $this->_getCookiesFileDir().DIRECTORY_SEPARATOR.$this->username.".cookiefile";
+        if (empty($this->rootDir)) return '';
+        return $this->_getFileDir($dir).DIRECTORY_SEPARATOR.$name.'.'.$ext;
+    }
+
+    /**
+     * The directory and file are created automatically.
+     * @param $dir
+     * @param $name
+     * @param $ext
+     * @throws \Exception
+     */
+    private function _createFile($dir, $name, $ext)
+    {
+        if (!empty($this->rootDir)) {
+            if (!file_exists($this->_getFileDir($dir))) {
+                mkdir($this->_getFileDir($dir), 0777, true);
+            }
+            if (!file_exists($this->_getFilePath($dir, $name, $ext))) {
+                if (file_put_contents($this->_getFilePath($dir, $name, $ext), '') === false) {
+                    throw new \Exception("Could not create $ext for {$this->username}.");
+                }
+            }
+        }
+    }
+
+    private function _getCookieFilePath()
+    {
+        $name = $this->mobile ? $this->username . '_auth' : $this->username;
+        return $this->_getFilePath('cookiefiles', $name, 'cookiefile');
     }
 
     private function _createCookieFile()
     {
-        if (!empty($this->cookieFilesDir)) {
-            if (!file_exists($this->_getCookiesFileDir())) {
-                mkdir($this->_getCookiesFileDir(), 0777, true);
-            }
-            if (!file_exists($this->_getCookiesFilePath())) {
-                if (file_put_contents($this->_getCookiesFilePath(), '') === false) {
-                    throw new \Exception("Could not create cookiefile for {$this->username}.");
-                }
-            }
-        }
+        $name = $this->mobile ? $this->username . '_auth' : $this->username;
+        $this->_createFile('cookiefiles', $name, 'cookiefile');
+    }
+
+    public function getAuthFilePath()
+    {
+        return $this->_getFilePath('authfiles', $this->username, 'authfile');
+    }
+
+    private function _createAuthFile()
+    {
+        $this->_createFile('authfiles', $this->username, 'authfile');
     }
 
     private function _setApiKey()
@@ -422,7 +499,7 @@ class SteamCommunity
      * Returns an instance of the Market class.
      * @return Market
      */
-    public function getMarket()
+    public function market()
     {
         return $this->market;
     }
@@ -431,16 +508,17 @@ class SteamCommunity
      * Returns an instance of the TradeOffers class.
      * @return TradeOffers
      */
-    public function getTradeOffers()
+    public function tradeOffers()
     {
         return $this->tradeOffers;
     }
 
     /**
-     * @return SteamGuard
+     * Returns an instance of the MobileAuth class.
+     * @return MobileAuth
      */
-    public function getSteamGuard()
+    public function mobileAuth()
     {
-        return $this->steamGuard;
+        return $this->mobileAuth;
     }
 }

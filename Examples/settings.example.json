@@ -1,6 +1,10 @@
 {
-  "username": "",
+  "username": "rename this file to settings.json",
   "password": "",
-  "apiKeyDomain": "",
-  "sharedSecret": ""
+  "apiKeyDomain": "optional, can remove this line",
+  "mobileAuth": {
+    "sharedSecret": "remove this entire block ('mobileAuth': {}) if not using 2FA",
+    "identitySecret" : "remove this entire block ('mobileAuth': {}) if not using 2FA",
+    "deviceId": "remove this entire block ('mobileAuth': {}) if not using 2FA"
+  }
 }

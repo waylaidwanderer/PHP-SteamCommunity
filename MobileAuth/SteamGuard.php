@@ -15,17 +15,17 @@ class SteamGuard
     private static $codeTranslationsLength = 26;
     private $sharedSecret = '';
 
-    public function __construct($sharedSecret = '')
+    public function __construct($sharedSecret)
     {
         $this->sharedSecret = $sharedSecret;
     }
 
-    public function GenerateSteamGuardCode()
+    public function generateSteamGuardCode()
     {
-        return $this->GenerateSteamGuardCodeForTime(TimeAligner::GetSteamTime());
+        return $this->generateSteamGuardCodeForTime(TimeAligner::GetSteamTime());
     }
 
-    public function GenerateSteamGuardCodeForTime($time)
+    public function generateSteamGuardCodeForTime($time)
     {
         if (empty($this->sharedSecret)) {
             return '';
