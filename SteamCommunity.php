@@ -16,7 +16,7 @@ use waylaidwanderer\SteamCommunity\MobileAuth\MobileAuth;
 
 class SteamCommunity
 {
-    const DEFAULT_MOBILE_COOKIES = ['mobileClientVersion' => '0 (2.1.3)', 'mobileClient' => 'android', 'Steam_Language' => 'english', 'dob' => ''];
+    static $DEFAULT_MOBILE_COOKIES = ['mobileClientVersion' => '0 (2.1.3)', 'mobileClient' => 'android', 'Steam_Language' => 'english', 'dob' => ''];
 
     private $username = '';
     private $password = '';
@@ -234,7 +234,7 @@ class SteamCommunity
         if ($this->mobile) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Requested-With: com.valvesoftware.android.steam.community"]);
             curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30");
-            curl_setopt($ch, CURLOPT_COOKIE, $this->buildCookie(self::DEFAULT_MOBILE_COOKIES));
+            curl_setopt($ch, CURLOPT_COOKIE, $this->buildCookie(self::$DEFAULT_MOBILE_COOKIES));
         } else {
             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
         }
