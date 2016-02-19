@@ -31,13 +31,7 @@ class Group
     {
         $history = [];
 
-        $url = self::BASE_URL . $this->gid . '/history?p=' . $page;
-        $html = $this->steamCommunity->cURL($url);
-        libxml_use_internal_errors(true);
-        $doc = new \DOMDocument();
-        $doc->loadHTML($html);
-        $xpath = new \DOMXPath($doc);
-
+        $xpath = $this->getHistoryXPath($page);
         /** @var \DOMElement[] $historyItems */
         $historyItems = $xpath->query('//div[contains(@class, "group_summary")]/div[contains(@class, "historyItem")]');
         foreach ($historyItems as $historyItem) {
@@ -60,5 +54,25 @@ class Group
         }
 
         return $history;
+    }
+
+    public function getHistoryNumPages()
+    {
+        $xpath = $this->getHistoryXPath();
+        $pagingText = $xpath->query('//div[contains(@class, "group_summary")]/div[contains(@class, "group_paging")]/p');
+        if (preg_match('/(?<=of )(.*)(?= History)/', $pagingText->item(0)->nodeValue, $matches)) {
+            return (int)ceil($matches[1] / 50);
+        }
+        return 1;
+    }
+
+    private function getHistoryXPath($page = 1)
+    {
+        $url = self::BASE_URL . $this->gid . '/history?p=' . $page;
+        $html = $this->steamCommunity->cURL($url);
+        libxml_use_internal_errors(true);
+        $doc = new \DOMDocument();
+        $doc->loadHTML($html);
+        return new \DOMXPath($doc);
     }
 }
