@@ -29,6 +29,9 @@ class User
         return new \SimpleXMLElement($xml);
     }
 
+    /**
+     * @return Group[]
+     */
     public function getGroups()
     {
         $groups = [];
