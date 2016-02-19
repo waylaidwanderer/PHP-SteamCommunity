@@ -15,6 +15,7 @@ class User
 {
     const BASE_URL = "http://steamcommunity.com/profiles/";
     private $steamId;
+    private $profile;
 
     public function __construct($steamId)
     {
@@ -23,10 +24,19 @@ class User
 
     public function getProfileXml()
     {
-        $url = self::BASE_URL . $this->steamId . '/?xml=1';
-        $xml = Helper::cURL($url);
+        if ($this->profile == null) {
+            $url = self::BASE_URL . $this->steamId . '/?xml=1';
+            $xml = Helper::cURL($url);
+            $this->profile = new \SimpleXMLElement($xml);
+        }
 
-        return new \SimpleXMLElement($xml);
+        return $this->profile;
+    }
+
+    public function getPersonaName()
+    {
+        $profile = $this->getProfileXml();
+        return (string)$profile->steamID;
     }
 
     /**
