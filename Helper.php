@@ -60,4 +60,9 @@ class Helper
 
         return (float) str_replace(',', '.', $removedThousendSeparator);
     }
+
+    public static function cURL($url, $ref = null, $postData = null)
+    {
+        return (new SteamCommunity())->cURL($url, $ref, $postData);
+    }
 }
