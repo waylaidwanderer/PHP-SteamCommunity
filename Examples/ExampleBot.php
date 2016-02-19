@@ -18,7 +18,7 @@ $steam = new SteamCommunity($settings, dirname(__FILE__));
 $loginResult = $steam->doLogin();
 while ($loginResult != LoginResult::LoginOkay) {
     if ($loginResult == LoginResult::Need2FA) {
-        if ($steam->mobileAuth()->steamGuard() == null) {
+        if ($steam->mobileAuth() == null) {
             $authCode = ask('Enter 2FA code: ');
             $steam->setTwoFactorCode($authCode);
         } else {
