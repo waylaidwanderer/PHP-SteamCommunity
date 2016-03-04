@@ -16,11 +16,36 @@ class Group
     const BASE_URL = "http://steamcommunity.com/gid/";
     private $steamCommunity;
     private $gid;
+    private $xml;
 
     public function __construct($gid, SteamCommunity $steamCommunity = null)
     {
         $this->gid = $gid;
         $this->steamCommunity = is_null($steamCommunity) ? new SteamCommunity() : $steamCommunity;
+    }
+
+    public function getGroupXml()
+    {
+        if ($this->xml == null) {
+            $url = self::BASE_URL . $this->gid . '/memberslistxml/?xml=1';
+            $response = Helper::cURL($url);
+            $this->xml = new \SimpleXMLElement($response);
+        }
+
+        return $this->xml;
+    }
+
+    /**
+     * @return array An array of SteamID64s.
+     */
+    public function getMembersList()
+    {
+        $members = [];
+        $xml = $this->getGroupXml();
+        foreach ($xml->members as $member) {
+            $members[] = $member->steamID64;
+        }
+        return $members;
     }
 
     /**
