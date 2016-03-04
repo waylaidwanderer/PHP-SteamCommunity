@@ -355,7 +355,7 @@ class SteamCommunity
         $this->_createFile('authfiles', $this->username, 'authfile');
     }
 
-    private function _setApiKey()
+    private function _setApiKey($recursionLevel = 1)
     {
         $url = 'https://steamcommunity.com/dev/apikey';
         $response = $this->cURL($url);
@@ -363,7 +363,7 @@ class SteamCommunity
             $this->apiKey = '';
         } else if (preg_match('/<p>Key: (.*)<\/p>/', $response, $matches)) {
             $this->apiKey = $matches[1];
-        } else if (!empty($this->apiKeyDomain)) {
+        } else if ($recursionLevel < 3 && !empty($this->apiKeyDomain)) {
             $registerUrl = 'https://steamcommunity.com/dev/registerkey';
             $params = [
                 'domain' => $this->apiKeyDomain,
@@ -372,7 +372,8 @@ class SteamCommunity
                 'Submit' => 'Register'
             ];
             $this->cURL($registerUrl, $url, $params);
-            $this->_setApiKey();
+            $recursionLevel++;
+            $this->_setApiKey($recursionLevel);
         } else {
             $this->apiKey = '';
         }
