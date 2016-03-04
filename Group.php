@@ -24,10 +24,10 @@ class Group
         $this->steamCommunity = is_null($steamCommunity) ? new SteamCommunity() : $steamCommunity;
     }
 
-    public function getGroupXml()
+    public function getGroupXml($page = 1)
     {
         if ($this->xml == null) {
-            $url = self::BASE_URL . $this->gid . '/memberslistxml/?xml=1';
+            $url = self::BASE_URL . $this->gid . '/memberslistxml/?xml=1&p=' . $page;
             $response = Helper::cURL($url);
             $this->xml = new \SimpleXMLElement($response);
         }
@@ -36,16 +36,48 @@ class Group
     }
 
     /**
+     * @return int Number of pages in memberslistxml.
+     */
+    public function getNumXmlPages()
+    {
+        $xml = $this->getGroupXml();
+        return (int)$xml->totalPages;
+    }
+
+    /**
      * @return array An array of SteamID64s.
      */
     public function getMembersList()
     {
         $members = [];
-        $xml = $this->getGroupXml();
+        $numPages = $this->getNumXmlPages();
+        for ($i = 1; $i <= $numPages; $i++) {
+            $members = array_merge($members, $this->getMembersListForPage($i));
+        }
+        return $members;
+    }
+
+    /**
+     * @param $page
+     * @return array An array of SteamID64s.
+     */
+    public function getMembersListForPage($page)
+    {
+        $members = [];
+        $xml = $this->getGroupXml($page);
         foreach ($xml->members->steamID64 as $steamID64) {
             $members[] = (string)$steamID64;
         }
         return $members;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMemberCount()
+    {
+        $xml = $this->getGroupXml();
+        return (int)$xml->memberCount;
     }
 
     /**
