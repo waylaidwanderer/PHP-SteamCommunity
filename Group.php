@@ -113,7 +113,7 @@ class Group
         return $history;
     }
 
-    public function getHistoryNumPages()
+    public function getNumHistoryPages()
     {
         $xpath = $this->getHistoryXPath();
         $pagingText = $xpath->query('//div[contains(@class, "group_summary")]/div[contains(@class, "group_paging")]/p');
