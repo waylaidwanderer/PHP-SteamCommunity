@@ -89,9 +89,7 @@ class SteamCommunity
     public function doLogin($mobile = false)
     {
         $this->mobile = $mobile;
-        if ($this->mobileAuth != null) {
-            $this->_createAuthFile();
-        }
+        $this->_createAuthFile();
         $this->_createCookieFile();
 
         if ($this->_isLoggedIn()) {
