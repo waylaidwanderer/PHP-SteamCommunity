@@ -42,8 +42,8 @@ class Group
     {
         $members = [];
         $xml = $this->getGroupXml();
-        foreach ($xml->members as $member) {
-            $members[] = $member->steamID64;
+        foreach ($xml->members->steamID64 as $steamID64) {
+            $members[] = (string)$steamID64;
         }
         return $members;
     }
