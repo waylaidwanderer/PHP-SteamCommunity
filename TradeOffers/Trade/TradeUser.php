@@ -10,17 +10,16 @@ use waylaidwanderer\SteamCommunity\TradeOffers\Trade;
  * Date: 2015-12-28
  * Time: 2:29 PM
  */
-class TradeUser implements \JsonSerializable
+class TradeUser
 {
     /** @var TradeAsset[] $assets */
     private $assets = [];
+    private $assetsString = '';
     private $currency = [];
     private $ready = false;
-    private $trade;
 
-    public function __construct(Trade $trade)
+    public function __construct()
     {
-        $this->trade = $trade;
     }
 
     public function addItem(TradeAsset $asset)
@@ -37,18 +36,19 @@ class TradeUser implements \JsonSerializable
         if ($exists) {
             return false;
         } else {
-            $this->trade->setVersion($this->trade->getVersion() + 1);
+            $this->assetsString .= $asset->getEncoded();
             $this->assets[] = $asset;
             return true;
         }
     }
 
-    public function jsonSerialize()
+    public function getEncoded()
     {
-        return [
-            'assets' => $this->assets,
-            'currency' => $this->currency,
-            'ready' => $this->ready
-        ];
+        if ($this->ready){
+            $ready = "true";
+        } else {
+            $ready = "false";
+        }
+        return '"assets":[' . substr($this->assetsString, 0, -1) . '],"currency":[],"ready":' . $ready;
     }
 }
