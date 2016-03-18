@@ -15,12 +15,51 @@ use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer;
 class TradeOffers
 {
     const BASE_URL = 'http://steamcommunity.com/my/tradeoffers/';
+    private $sessionId;
+    private $apiKey;
+    private $steamCookies = 'cookies';
 
-    private $steamCommunity;
-
-    public function __construct(SteamCommunity $steamCommunity)
+    public function __construct($sessionId, $apiKey)
     {
-        $this->steamCommunity = $steamCommunity;
+        $this->sessionId = $sessionId;
+        $this->apiKey = $apiKey;
+    }
+    
+    public function cURL($url, $ref = null, $postData = null)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $this->steamCookies);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->steamCookies);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0');
+        
+        if (isset($ref)) {
+            curl_setopt($ch, CURLOPT_REFERER, $ref);
+        }
+        
+        if (isset($postData)) {
+            curl_setopt($ch, CURLOPT_POST, true);
+            $postStr = "";
+            
+            foreach ($postData as $key => $value) {
+                if ($postStr)
+                    $postStr .= "&";
+                $postStr .= $key . "=" . $value;
+            }
+            
+            echo $postStr . PHP_EOL . PHP_EOL;
+            
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postStr);
+        }
+        
+        $output = curl_exec($ch);
+        curl_close($ch);
+        return $output;
     }
 
     /**
@@ -29,7 +68,7 @@ class TradeOffers
     public function getIncomingOffers()
     {
         $url = self::BASE_URL;
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), false);
+        return $this->_parseTradeOffers($this->cURL($url), false);
     }
 
     /**
@@ -38,7 +77,7 @@ class TradeOffers
     public function getIncomingOfferHistory()
     {
         $url = self::BASE_URL . '?history=1';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), false);
+        return $this->_parseTradeOffers($this->cURL($url), false);
     }
 
     /**
@@ -47,7 +86,7 @@ class TradeOffers
     public function getSentOffers()
     {
         $url = self::BASE_URL . 'sent/';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), true);
+        return $this->_parseTradeOffers($this->cURL($url), true);
     }
 
     /**
@@ -56,7 +95,7 @@ class TradeOffers
     public function getSentOfferHistory()
     {
         $url = self::BASE_URL . 'sent/?history=1';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), true);
+        return $this->_parseTradeOffers($this->cURL($url), true);
     }
 
     /**
@@ -224,13 +263,13 @@ class TradeOffers
     {
         $tradeOffers = [];
 
-        $url = 'https://api.steampowered.com/IEconService/GetTradeOffers/v1/?key=' . $this->steamCommunity->getApiKey() . '&get_sent_offers=1&get_received_offers=1';
+        $url = 'https://api.steampowered.com/IEconService/GetTradeOffers/v1/?key=' . $this->apiKey . '&get_sent_offers=1&get_received_offers=1';
         if ($activeOnly) {
             $url .= '&active_only=1&time_historical_cutoff=' . time();
         } else {
             $url .= '&active_only=0';
         }
-        $response = $this->steamCommunity->cURL($url);
+        $response = $this->cURL($url);
         $json = json_decode($response, true);
         if (isset($json['response'])) {
             if (isset($json['response']['trade_offers_sent'])) {
@@ -251,8 +290,8 @@ class TradeOffers
 
     public function getTradeOfferViaAPI($tradeOfferId)
     {
-        $url = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/?key={$this->steamCommunity->getApiKey()}&tradeofferid={$tradeOfferId}&language=en_us";
-        $response = $this->steamCommunity->cURL($url);
+        $url = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/?key={$this->apiKey}&tradeofferid={$tradeOfferId}&language=en_us";
+        $response = $this->cURL($url);
         $json = json_decode($response, true);
         if (isset($json['response']) && isset($json['response']['offer'])) {
             return new TradeOffer($json['response']['offer']);
@@ -271,12 +310,12 @@ class TradeOffers
             $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/accept';
             $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/';
             $params = [
-                'sessionid' => $this->steamCommunity->getSessionId(),
+                'sessionid' => $this->sessionId,
                 'serverid' => '1',
                 'tradeofferid' => $tradeOffer->getTradeOfferId(),
                 'partner' => Helper::toCommunityID($tradeOffer->getOtherAccountId())
             ];
-            $response = $this->steamCommunity->cURL($url, $referer, $params);
+            $response = $this->cURL($url, $referer, $params);
             $json = json_decode($response, true);
             if (is_null($json)) {
                 return false;
@@ -310,10 +349,10 @@ class TradeOffers
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/decline';
         $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
         $params = [
-            'sessionid' => $this->steamCommunity->getSessionId(),
+            'sessionid' => $this->sessionId,
             'serverid' => '1'
         ];
-        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $response = $this->cURL($url, $referer, $params);
         $json = json_decode($response, true);
         if (is_null($json)) {
             return false;
@@ -345,9 +384,9 @@ class TradeOffers
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/cancel';
         $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
         $params = [
-            'sessionid' => $this->steamCommunity->getSessionId()
+            'sessionid' => $this->sessionId
         ];
-        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $response = $this->cURL($url, $referer, $params);
         $json = json_decode($response, true);
         if (is_null($json)) {
             return false;
@@ -363,6 +402,6 @@ class TradeOffers
      */
     public function createTrade($accountId)
     {
-        return new Trade($this->steamCommunity, $accountId);
+        return new Trade($this->sessionId, $accountId);
     }
 }

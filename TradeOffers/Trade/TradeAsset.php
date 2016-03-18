@@ -9,7 +9,7 @@
 namespace waylaidwanderer\SteamCommunity\TradeOffers\Trade;
 
 
-class TradeAsset implements \JsonSerializable
+class TradeAsset
 {
     private $appId;
     private $contextId;
@@ -24,14 +24,9 @@ class TradeAsset implements \JsonSerializable
         $this->amount = $amount;
     }
 
-    public function jsonSerialize()
+    public function getEncoded()
     {
-        return [
-            'appid' => (int)$this->appId,
-            'contextid' => $this->contextId,
-            'assetid' => $this->assetId,
-            'amount' => (int)$this->amount
-        ];
+        return '{"appid":' . $this->appId . ',"contextid":"' . $this->contextId . '","amount":' . $this->amount . ',"assetid":"' . $this->assetId . '"},';
     }
 
     /**
