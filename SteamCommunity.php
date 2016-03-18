@@ -30,6 +30,7 @@ class SteamCommunity
 
     private $steamId;
     private $sessionId;
+    private $steamCookies = 'cookies';
 
     private $requiresCaptcha = false;
     private $captchaGID;
@@ -75,7 +76,6 @@ class SteamCommunity
 
         if (!$mobile) {
             $this->market = new Market($this);
-            $this->tradeOffers = new TradeOffers($this);
         }
     }
 
@@ -97,6 +97,9 @@ class SteamCommunity
                 $this->mobileAuth->setOauth(file_get_contents($this->getAuthFilePath()));
             }
             $this->loggedIn = true;
+            if (is_null($this->tradeOffers)){
+                $this->tradeOffers = new TradeOffers($this->sessionId, $this->apiKey);
+            }
             return LoginResult::LoginOkay;
         }
 
@@ -159,6 +162,7 @@ class SteamCommunity
                 file_put_contents($this->getAuthFilePath(), $loginJson['oauth']);
             }
             $this->_setSession();
+            $this->tradeOffers = new TradeOffers($this->sessionId, $this->apiKey);
             $this->loggedIn = true;
             return LoginResult::LoginOkay;
         }
@@ -224,8 +228,8 @@ class SteamCommunity
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
         if (!empty($this->rootDir)) {
-            curl_setopt($ch, CURLOPT_COOKIEFILE, $this->_getCookieFilePath());
-            curl_setopt($ch, CURLOPT_COOKIEJAR, $this->_getCookieFilePath());
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $this->steamCookies);
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $this->steamCookies);
         }
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
