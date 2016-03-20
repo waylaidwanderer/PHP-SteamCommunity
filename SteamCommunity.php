@@ -82,17 +82,17 @@ class SteamCommunity
     /**
      * Login with the set username and password.
      * @param bool $mobile Set to true to login as a mobile user.
+     * @param bool $relogin Set to true to force a fresh login session.
      * @return LoginResult
      * @throws SteamException Thrown when Steam gives an unexpected response (e.g. Steam is down/having issues)
-     * @throws \Exception Thrown when cookiefile is unable to be created.
      */
-    public function doLogin($mobile = false)
+    public function doLogin($mobile = false, $relogin = false)
     {
         $this->mobile = $mobile;
         $this->_createAuthFile();
         $this->_createCookieFile();
 
-        if ($this->_isLoggedIn()) {
+        if ($this->_isLoggedIn() && !$relogin) {
             if ($this->mobileAuth != null) {
                 $this->mobileAuth->setOauth(file_get_contents($this->getAuthFilePath()));
             }
