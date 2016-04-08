@@ -371,7 +371,7 @@ class TradeOffers
      * @param mixed $tradeOffer object or id
      * @return array|null
      */
-    public function getNewAssetIds($tradeOffer)
+    public function getItems($tradeOffer)
     {
         if (is_int($tradeOffer)) {
             $tradeOffer = $this->getTradeOfferViaAPI($tradeOffer);
