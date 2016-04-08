@@ -73,7 +73,7 @@ class Trade implements \JsonSerializable
     public function send($token = '')
     {
         $url = 'https://steamcommunity.com/tradeoffer/new/send';
-        $referer = 'https://steamcommunity.com/tradeoffer/new/?partner=' . $this->accountId;
+        $referer = 'https://steamcommunity.com/tradeoffer/new/?partner=' . $this->accountId . ($token ? '&token=' . $token : '');
         $params = [
             'sessionid' => $this->steamCommunity->getSessionId(),
             'serverid' => '1',
