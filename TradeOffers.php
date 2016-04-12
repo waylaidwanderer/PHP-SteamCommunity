@@ -365,4 +365,30 @@ class TradeOffers
     {
         return new Trade($this->steamCommunity, $accountId);
     }
+
+    /**
+     * Get the new assetid after a trade
+     * @param mixed $tradeOffer object or id
+     * @return array|null
+     */
+    public function getItems($tradeOffer)
+    {
+        if (is_int($tradeOffer)) {
+            $tradeOffer = $this->getTradeOfferViaAPI($tradeOffer);
+        }
+
+        if ($tradeOffer instanceof TradeOffer && $tradeId = $tradeOffer->getTradeId()) {
+            $url = 'https://steamcommunity.com/trade/' . $tradeId . '/receipt/';
+            $response = $this->steamCommunity->cURL($url);
+            $pattern = '/oItem = ([^;]*)/';
+            
+            preg_match_all($pattern, $response, $matches);
+
+            if ($matches[1]) {
+                return array_map('json_decode', $matches[1]);
+            }
+        }
+
+        return null;
+    }
 }

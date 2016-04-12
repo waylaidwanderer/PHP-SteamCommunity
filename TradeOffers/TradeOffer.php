@@ -289,4 +289,13 @@ class TradeOffer
     {
         $this->confirmationMethod = $confirmationMethod;
     }
+
+    /**
+     * Get the trade id
+     * @return int
+     */
+    public function getTradeId()
+    {
+        return $this->tradeId;
+    }
 }

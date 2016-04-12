@@ -62,6 +62,9 @@ class SteamCommunity
         if (isset($settings['apiKeyDomain'])) {
             $this->apiKeyDomain = $settings['apiKeyDomain'];
         }
+        if (isset($settings['apiKey'])) {
+            $this->apiKey = $settings['apiKey'];
+        }
         if (isset($settings['mobileAuth'])) {
             $this->mobileAuth = new MobileAuth($settings['mobileAuth'], new SteamCommunity([
                 'username' => $settings['username'],
@@ -355,25 +358,27 @@ class SteamCommunity
 
     private function _setApiKey($recursionLevel = 1)
     {
-        $url = 'https://steamcommunity.com/dev/apikey';
-        $response = $this->cURL($url);
-        if (preg_match('/<h2>Access Denied<\/h2>/', $response)) {
-            $this->apiKey = '';
-        } else if (preg_match('/<p>Key: (.*)<\/p>/', $response, $matches)) {
-            $this->apiKey = $matches[1];
-        } else if ($recursionLevel < 3 && !empty($this->apiKeyDomain)) {
-            $registerUrl = 'https://steamcommunity.com/dev/registerkey';
-            $params = [
-                'domain' => $this->apiKeyDomain,
-                'agreeToTerms' => 'agreed',
-                'sessionid' => $this->sessionId,
-                'Submit' => 'Register'
-            ];
-            $this->cURL($registerUrl, $url, $params);
-            $recursionLevel++;
-            $this->_setApiKey($recursionLevel);
-        } else {
-            $this->apiKey = '';
+        if (!$this->apiKey) {
+            $url = 'https://steamcommunity.com/dev/apikey';
+            $response = $this->cURL($url);
+            if (preg_match('/<h2>Access Denied<\/h2>/', $response)) {
+                $this->apiKey = '';
+            } else if (preg_match('/<p>Key: (.*)<\/p>/', $response, $matches)) {
+                $this->apiKey = $matches[1];
+            } else if ($recursionLevel < 3 && !empty($this->apiKeyDomain)) {
+                $registerUrl = 'https://steamcommunity.com/dev/registerkey';
+                $params = [
+                    'domain' => $this->apiKeyDomain,
+                    'agreeToTerms' => 'agreed',
+                    'sessionid' => $this->sessionId,
+                    'Submit' => 'Register'
+                ];
+                $this->cURL($registerUrl, $url, $params);
+                $recursionLevel++;
+                $this->_setApiKey($recursionLevel);
+            } else {
+                $this->apiKey = '';
+            }
         }
     }
 
