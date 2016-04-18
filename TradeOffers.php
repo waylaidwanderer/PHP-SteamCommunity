@@ -380,7 +380,7 @@ class TradeOffers
         if ($tradeOffer instanceof TradeOffer && $tradeId = $tradeOffer->getTradeId()) {
             $url = 'https://steamcommunity.com/trade/' . $tradeId . '/receipt/';
             $response = $this->steamCommunity->cURL($url);
-            $pattern = '/oItem = ([^;]*)/';
+            $pattern = '/oItem = ({.*});/';
             
             preg_match_all($pattern, $response, $matches);
 
