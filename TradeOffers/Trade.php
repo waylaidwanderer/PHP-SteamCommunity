@@ -8,7 +8,6 @@
 
 namespace waylaidwanderer\SteamCommunity\TradeOffers;
 
-
 use waylaidwanderer\SteamCommunity\Helper;
 use waylaidwanderer\SteamCommunity\SteamCommunity;
 use waylaidwanderer\SteamCommunity\TradeOffers\Trade\TradeAsset;
@@ -23,6 +22,7 @@ class Trade implements \JsonSerializable
     private $steamCommunity;
     private $accountId;
 
+    private $error = '';
     private $message = '';
 
     public function __construct(SteamCommunity $steamCommunity, $accountId)
@@ -73,7 +73,8 @@ class Trade implements \JsonSerializable
     public function send($token = '')
     {
         $url = 'https://steamcommunity.com/tradeoffer/new/send';
-        $referer = 'https://steamcommunity.com/tradeoffer/new/?partner=' . $this->accountId . ($token ? '&token=' . $token : '');
+        $referer = 'https://steamcommunity.com/tradeoffer/new/' .
+            '?partner=' . $this->accountId . ($token ? '&token=' . $token : '');
         $params = [
             'sessionid' => $this->steamCommunity->getSessionId(),
             'serverid' => '1',
@@ -87,11 +88,13 @@ class Trade implements \JsonSerializable
         $response = $this->steamCommunity->cURL($url, $referer, $params);
         $json = json_decode($response, true);
         if (is_null($json)) {
+            $this->error = 'Empty response';
             return 0;
         } else {
             if (isset($json['tradeofferid'])) {
                 return $json['tradeofferid'];
             } else {
+                $this->error = $json['strError'];
                 return 0;
             }
         }
@@ -111,6 +114,14 @@ class Trade implements \JsonSerializable
     public function setVersion($version)
     {
         $this->version = $version;
+    }
+
+    /**
+     * @return string
+     */
+    public function getError()
+    {
+        return $this->error;
     }
 
     /**
