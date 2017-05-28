@@ -13,12 +13,14 @@ class Confirmation
 {
     private $confirmationId;
     private $confirmationKey;
+    private $confirmationOfferId;
     private $confirmationDescription;
 
-    public function __construct($confirmationId, $confirmationKey, $confirmationDescription)
+    public function __construct($confirmationId, $confirmationKey, $confirmationOfferId, $confirmationDescription)
     {
         $this->confirmationId = $confirmationId;
         $this->confirmationKey = $confirmationKey;
+        $this->confirmationOfferId = $confirmationOfferId;
         $this->confirmationDescription = $confirmationDescription;
     }
 
@@ -44,5 +46,13 @@ class Confirmation
     public function getConfirmationDescription()
     {
         return $this->confirmationDescription;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConfirmationOfferId()
+    {
+        return $this->confirmationOfferId;
     }
 }
