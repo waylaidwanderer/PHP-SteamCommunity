@@ -38,17 +38,20 @@ class Confirmations
         if (strpos($response, '<div>Nothing to confirm</div>') === false) {
             $confIdRegex = '/data-confid="(\d+)"/';
             $confKeyRegex = '/data-key="(\d+)"/';
+            $confOfferRegex = '/data-creator="(\d+)"/';
             $confDescRegex = '/<div>((Confirm|Trade with|Sell -) .+)<\/div>/';
 
             preg_match_all($confIdRegex, $response, $confIdMatches);
             preg_match_all($confKeyRegex, $response, $confKeyMatches);
+            preg_match_all($confOfferRegex, $response, $confOfferMatches);
             preg_match_all($confDescRegex, $response, $confDescMatches);
-            if (count($confIdMatches[1]) > 0 && count($confKeyMatches[1]) > 0 && count($confDescMatches) > 0) {
+            if (count($confIdMatches[1]) > 0 && count($confKeyMatches[1]) > 0 && count($confDescMatches) > 0 && count($confOfferMatches) > 0) {
                 for ($i = 0; $i < count($confIdMatches[1]); $i++) {
                     $confId = $confIdMatches[1][$i];
                     $confKey = $confKeyMatches[1][$i];
+                    $confOfferId = $confOfferMatches[1][$i];
                     $confDesc = $confDescMatches[1][$i];
-                    $confirmations[] = new Confirmation($confId, $confKey, $confDesc);
+                    $confirmations[] = new Confirmation($confId, $confKey, $confOfferId, $confDesc);
                 }
             } else {
                 throw new WgTokenInvalidException();
