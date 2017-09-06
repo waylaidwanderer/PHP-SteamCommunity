@@ -45,13 +45,23 @@ class Confirmations
             preg_match_all($confKeyRegex, $response, $confKeyMatches);
             preg_match_all($confOfferRegex, $response, $confOfferMatches);
             preg_match_all($confDescRegex, $response, $confDescMatches);
+
             if (count($confIdMatches[1]) > 0 && count($confKeyMatches[1]) > 0 && count($confDescMatches) > 0 && count($confOfferMatches) > 0) {
+                $checkedConfIds = [];
+
                 for ($i = 0; $i < count($confIdMatches[1]); $i++) {
                     $confId = $confIdMatches[1][$i];
+
+                    if (in_array($confId, $checkedConfIds)) {
+                        continue;
+                    }
+
                     $confKey = $confKeyMatches[1][$i];
                     $confOfferId = $confOfferMatches[1][$i];
                     $confDesc = $confDescMatches[1][$i];
                     $confirmations[] = new Confirmation($confId, $confKey, $confOfferId, $confDesc);
+
+                    $checkedConfIds[] = $confId;
                 }
             } else {
                 throw new WgTokenInvalidException();
