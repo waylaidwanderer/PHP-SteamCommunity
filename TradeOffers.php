@@ -358,7 +358,7 @@ class TradeOffers
 
     /**
      * Shortcut for creating a new trade offer with a user.
-     * @param mixed $accountId Account ID of the user you want to create a trade with.
+     * @param string $accountId Account ID of the user you want to create a trade with.
      * @return Trade
      */
     public function createTrade($accountId)

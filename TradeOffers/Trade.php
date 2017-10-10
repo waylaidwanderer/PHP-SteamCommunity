@@ -43,6 +43,13 @@ class Trade implements \JsonSerializable
         ];
     }
 
+    /**
+     * @param int $appId
+     * @param int $contextId
+     * @param string $assetId
+     * @param int $amount
+     * @return bool
+     */
     public function addMyItem($appId, $contextId, $assetId, $amount = 1)
     {
         $asset = new TradeAsset($appId, $contextId, $assetId, $amount);
@@ -54,6 +61,13 @@ class Trade implements \JsonSerializable
         return $this->me->addItem($asset);
     }
 
+    /**
+     * @param int $appId
+     * @param int $contextId
+     * @param string $assetId
+     * @param int $amount
+     * @return bool
+     */
     public function addOtherItem($appId, $contextId, $assetId, $amount = 1)
     {
         $asset = new TradeAsset($appId, $contextId, $assetId, $amount);
@@ -133,7 +147,7 @@ class Trade implements \JsonSerializable
     }
 
     /**
-     * @param string $message
+     * @param string $message Max length is 128 characters
      */
     public function setMessage($message)
     {
