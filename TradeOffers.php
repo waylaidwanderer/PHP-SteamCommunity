@@ -8,20 +8,15 @@
 
 namespace waylaidwanderer\SteamCommunity;
 
-
+use waylaidwanderer\SteamCommunity\SteamCommunity;
 use waylaidwanderer\SteamCommunity\TradeOffers\Trade;
 use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer;
+use waylaidwanderer\SteamCommunity\User;
+use waylaidwanderer\SteamCommunity\Captcha;
 
 class TradeOffers
 {
-    const BASE_URL = 'http://steamcommunity.com/my/tradeoffers/';
-
-    private $steamCommunity;
-
-    public function __construct(SteamCommunity $steamCommunity)
-    {
-        $this->steamCommunity = $steamCommunity;
-    }
+    const BASE_URL = 'https://steamcommunity.com/my/tradeoffers/';
 
     /**
      * @return TradeOffer[]
@@ -29,7 +24,7 @@ class TradeOffers
     public function getIncomingOffers()
     {
         $url = self::BASE_URL;
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), false);
+        return $this->_parseTradeOffers(SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url), false, 'receive');
     }
 
     /**
@@ -38,7 +33,7 @@ class TradeOffers
     public function getIncomingOfferHistory()
     {
         $url = self::BASE_URL . '?history=1';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), false);
+        return $this->_parseTradeOffers(SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url), false, 'receive');
     }
 
     /**
@@ -47,7 +42,7 @@ class TradeOffers
     public function getSentOffers()
     {
         $url = self::BASE_URL . 'sent/';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), true);
+        return $this->_parseTradeOffers(SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url), true, 'give');
     }
 
     /**
@@ -56,7 +51,7 @@ class TradeOffers
     public function getSentOfferHistory()
     {
         $url = self::BASE_URL . 'sent/?history=1';
-        return $this->_parseTradeOffers($this->steamCommunity->cURL($url), true);
+        return $this->_parseTradeOffers(SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url), true, 'give');
     }
 
     /**
@@ -64,13 +59,27 @@ class TradeOffers
      * @param $isOurOffer
      * @return TradeOffer[]
      */
-    private function _parseTradeOffers($html, $isOurOffer)
+    public function _parseTradeOffers($html, $isOurOffer, $type)
     {
+        if (empty($html)) {
+            return false;
+        }
+
         libxml_use_internal_errors(true);
 
         $doc = new \DOMDocument();
         $doc->loadHTML($html);
         $xpath = new \DOMXPath($doc);
+
+        $fatalError = $xpath->query("//div[contains(@class,'profile_fatalerror_message')]");
+        if ($fatalError->length && $xpath->evaluate('boolean(//input[contains(@id,"captcha_entry")])')) {
+            $fatalErrorNode = $fatalError->item(0);
+            $captchaImageNode = $xpath->query('./img', $fatalErrorNode)->item(0);
+            $captchaImage = $captchaImageNode->getAttribute('src');
+
+            $captcha = new Captcha($captchaImage, array($this, debug_backtrace()[1]['function']));
+            return $captcha->solveAndContinue();
+        }
 
         $tradeOffers = [];
         /** @var \DOMElement[] $tradeOfferElements */
@@ -82,63 +91,26 @@ class TradeOffers
             $tradeOfferId = str_replace('tradeofferid_', '', $tradeOfferElement->getAttribute('id'));
             $tradeOffer->setTradeOfferId($tradeOfferId);
 
-            $primaryItemsElement = $xpath->query('.//div[contains(@class, "tradeoffer_items primary")]', $tradeOfferElement)->item(0);
-            $itemsToGiveList = $xpath->query('.//div[contains(@class, "tradeoffer_item_list")]/div[contains(@class, "trade_item")]', $primaryItemsElement);
-            $itemsToGive = [];
-            /** @var \DOMElement[] $itemsToGiveList */
-            foreach ($itemsToGiveList as $itemToGive) {
-                //classinfo/570/583164181/93973071
-                //         appId/classId/instanceId
-                //570/2/7087209304/76561198045552709
-                //appId/contextId/assetId/steamId
-                $item = new TradeOffer\Item();
-                $itemInfo = explode('/', $itemToGive->getAttribute('data-economy-item'));
-                if ($itemInfo[0] == 'classinfo') {
-                    $item->setAppId($itemInfo[1]);
-                    $item->setClassId($itemInfo[2]);
-                    if (isset($itemInfo[3])) {
-                        $item->setInstanceId($itemInfo[3]);
-                    }
-                } else {
-                    $item->setAppId($itemInfo[0]);
-                    $item->setContextId($itemInfo[1]);
-                    $item->setAssetId($itemInfo[2]);
-                }
-                if (strpos($itemToGive->getAttribute('class'), 'missing') !== false) {
-                    $item->setMissing(true);
-                }
-                $itemsToGive[] = $item;
-            }
-            $tradeOffer->setItemsToGive($itemsToGive);
+            $tradeOffer->setMyAccountId(SteamCommunity::getInstance()->get('steamId'));
 
-            $secondaryItemsElement = $xpath->query('.//div[contains(@class, "tradeoffer_items secondary")]', $tradeOfferElement)->item(0);;
-
-            $otherAccountId = $xpath->query('.//a[@data-miniprofile]/@data-miniprofile', $secondaryItemsElement)->item(0)->nodeValue;
+            $otherAccountId = Helper::toCommunityID($xpath->query('.//a[@data-miniprofile]/@data-miniprofile', $tradeOfferElement)->item(0)->nodeValue);
             $tradeOffer->setOtherAccountId($otherAccountId);
 
-            $itemsToReceiveList = $xpath->query('.//div[contains(@class, "tradeoffer_item_list")]/div[contains(@class, "trade_item")]', $secondaryItemsElement);
-            $itemsToReceive = [];
-            /** @var \DOMElement[] $itemsToReceiveList */
-            foreach ($itemsToReceiveList as $itemToReceive) {
-                $item = new TradeOffer\Item();
-                $itemInfo = explode('/', $itemToReceive->getAttribute('data-economy-item'));
-                if ($itemInfo[0] == 'classinfo') {
-                    $item->setAppId($itemInfo[1]);
-                    $item->setClassId($itemInfo[2]);
-                    if (isset($itemInfo[3])) {
-                        $item->setInstanceId($itemInfo[3]);
-                    }
-                } else {
-                    $item->setAppId($itemInfo[0]);
-                    $item->setContextId($itemInfo[1]);
-                    $item->setAssetId($itemInfo[2]);
-                }
-                if (strpos($itemToReceive->getAttribute('class'), 'missing') !== false) {
-                    $item->setMissing(true);
-                }
-                $itemsToReceive[] = $item;
+            if ($type == 'receive') {
+                $itemsToReceive = $this->_parseItemsToGive($xpath, $tradeOfferElement, $tradeOffer);
+                $tradeOffer->setItemsToReceive($otherAccountId, $itemsToReceive);
+
+                $itemsToGive = $this->_parseItemsToReceive($xpath, $tradeOfferElement, $tradeOffer);
+                $tradeOffer->setItemsToGive(SteamCommunity::getInstance()->get('steamId'), $itemsToGive);
             }
-            $tradeOffer->setItemsToReceive($itemsToReceive);
+
+            if ($type == 'give') {
+                $itemsToGive = $this->_parseItemsToGive($xpath, $tradeOfferElement, $tradeOffer);
+                $tradeOffer->setItemsToGive(SteamCommunity::getInstance()->get('steamId'), $itemsToGive);
+
+                $itemsToReceive = $this->_parseItemsToReceive($xpath, $tradeOfferElement, $tradeOffer);
+                $tradeOffer->setItemsToReceive($otherAccountId, $itemsToReceive);
+            }
 
             // message
             $messageElement = $xpath->query('.//div[contains(@class, "tradeoffer_message")]/div[contains(@class, "quote")]', $tradeOfferElement)->item(0);
@@ -217,20 +189,86 @@ class TradeOffers
 
             $tradeOffers[] = $tradeOffer;
         }
+
         return $tradeOffers;
     }
 
-    public function getTradeOffersViaAPI($activeOnly = false)
+    private function _parseItemsToGive($xpath, $tradeOfferElement, &$tradeOffer)
+    {
+        $primaryItemsElement = $xpath->query('.//div[contains(@class, "tradeoffer_items primary")]', $tradeOfferElement)->item(0);
+        $itemsToGiveList = $xpath->query('.//div[contains(@class, "tradeoffer_item_list")]/div[contains(@class, "trade_item")]', $primaryItemsElement);
+        $itemsToGive = [];
+        /** @var \DOMElement[] $itemsToGiveList */
+        foreach ($itemsToGiveList as $itemToGive) {
+            //classinfo/570/583164181/93973071
+            //         appId/classId/instanceId
+            //570/2/7087209304/76561198045552709
+            //appId/contextId/assetId/steamId
+            $itemsToGive[] = $this->_parseItem($itemToGive);;
+        }
+
+        return $itemsToGive;
+    }
+
+    private function _parseItemsToReceive($xpath, $tradeOfferElement, &$tradeOffer)
+    {
+        $secondaryItemsElement = $xpath->query('.//div[contains(@class, "tradeoffer_items secondary")]', $tradeOfferElement)->item(0);;
+
+        $itemsToReceiveList = $xpath->query('.//div[contains(@class, "tradeoffer_item_list")]/div[contains(@class, "trade_item")]', $secondaryItemsElement);
+        $itemsToReceive = [];
+        /** @var \DOMElement[] $itemsToReceiveList */
+        foreach ($itemsToReceiveList as $itemToReceive) {
+            $itemsToReceive[] = $this->_parseItem($itemToReceive);
+        }
+
+        return $itemsToReceive;
+    }
+
+    private function _parseItem($itemElement)
+    {
+        $item = new TradeOffer\Item();
+        $economyItem = $itemElement->getAttribute('data-economy-item');
+
+        $itemInfo = explode('/', $economyItem);
+        if ($itemInfo[0] == 'classinfo') {
+            $item->setAppId($itemInfo[1]);
+            $item->setClassId($itemInfo[2]);
+            if (isset($itemInfo[3])) {
+                $item->setInstanceId($itemInfo[3]);
+            }
+        } else {
+            $item->setAppId($itemInfo[0]);
+            $item->setContextId($itemInfo[1]);
+            $item->setAssetId($itemInfo[2]);
+        }
+        if (strpos($itemElement->getAttribute('class'), 'missing') !== false) {
+            $item->setMissing(true);
+        }
+
+        return $item;
+    }
+
+    public function getIncomingTradeOffersViaAPI($activeOnly = false)
+    {
+        return $this->getTradeOffersViaAPI($activeOnly, '&get_received_offers=1');
+    }
+
+    public function getSentTradeOffersViaAPI($activeOnly = false)
+    {
+        return $this->getTradeOffersViaAPI($activeOnly, '&get_sent_offers=1');
+    }
+
+    public function getTradeOffersViaAPI($activeOnly = false, $tradeOfferQuery = '&get_sent_offers=1&get_received_offers=1')
     {
         $tradeOffers = [];
 
-        $url = 'https://api.steampowered.com/IEconService/GetTradeOffers/v1/?key=' . $this->steamCommunity->getApiKey() . '&get_sent_offers=1&get_received_offers=1';
+        $url = SteamCommunity::getInstance()->getClassFromCache('WebApi')->getApiUrl() . 'IEconService/GetTradeOffers/v1/?key=' . SteamCommunity::getInstance()->get('apiKey') . $tradeOfferQuery;
         if ($activeOnly) {
             $url .= '&active_only=1&time_historical_cutoff=' . time();
         } else {
             $url .= '&active_only=0';
         }
-        $response = $this->steamCommunity->cURL($url);
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
         $json = json_decode($response, true);
         if (isset($json['response'])) {
             if (isset($json['response']['trade_offers_sent'])) {
@@ -251,8 +289,9 @@ class TradeOffers
 
     public function getTradeOfferViaAPI($tradeOfferId)
     {
-        $url = "https://api.steampowered.com/IEconService/GetTradeOffer/v1/?key={$this->steamCommunity->getApiKey()}&tradeofferid={$tradeOfferId}&language=en_us";
-        $response = $this->steamCommunity->cURL($url);
+        $url = SteamCommunity::getInstance()->getClassFromCache('WebApi')->getApiUrl() . "IEconService/GetTradeOffer/v1/?key=" . SteamCommunity::getInstance()->get('apiKey') . "&tradeofferid={$tradeOfferId}&language=en_us";
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
+
         $json = json_decode($response, true);
         if (isset($json['response']) && isset($json['response']['offer'])) {
             return new TradeOffer($json['response']['offer']);
@@ -271,12 +310,15 @@ class TradeOffers
             $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/accept';
             $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOffer->getTradeOfferId() . '/';
             $params = [
-                'sessionid' => $this->steamCommunity->getSessionId(),
+                'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
                 'serverid' => '1',
                 'tradeofferid' => $tradeOffer->getTradeOfferId(),
                 'partner' => Helper::toCommunityID($tradeOffer->getOtherAccountId())
             ];
-            $response = $this->steamCommunity->cURL($url, $referer, $params);
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params, array(
+            'connectionTimeOut' => 60,
+            'timeOut' => 60
+            ));
             $json = json_decode($response, true);
             if (is_null($json)) {
                 return false;
@@ -285,6 +327,37 @@ class TradeOffers
             }
         }
         return false;
+    }
+
+    /**
+     * Accept a trade offer by its id.
+     * @param $tradeOfferId
+     * @param $otherAccountId
+     * @return bool
+     */
+    public function acceptTradeById($tradeOfferId, $otherAccountId)
+    {
+        $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/accept';
+        $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
+        $params = [
+            'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
+            'serverid' => '1',
+            'tradeofferid' => $tradeOfferId,
+            'partner' => Helper::toCommunityID($otherAccountId),
+            'captcha' => ""
+        ];
+
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params, array(
+            'connectionTimeOut' => 300,
+            'timeOut' => 300
+        ));
+
+        $json = json_decode($response, true);
+        if (is_null($json)) {
+            return false;
+        } else {
+            return isset($json['tradeid']);
+        }
     }
 
     /**
@@ -310,10 +383,10 @@ class TradeOffers
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/decline';
         $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
         $params = [
-            'sessionid' => $this->steamCommunity->getSessionId(),
+            'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
             'serverid' => '1'
         ];
-        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params);
         $json = json_decode($response, true);
         if (is_null($json)) {
             return false;
@@ -345,9 +418,9 @@ class TradeOffers
         $url = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/cancel';
         $referer = 'https://steamcommunity.com/tradeoffer/' . $tradeOfferId . '/';
         $params = [
-            'sessionid' => $this->steamCommunity->getSessionId()
+            'sessionid' => SteamCommunity::getInstance()->get('sessionId')
         ];
-        $response = $this->steamCommunity->cURL($url, $referer, $params);
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params);
         $json = json_decode($response, true);
         if (is_null($json)) {
             return false;
@@ -363,7 +436,7 @@ class TradeOffers
      */
     public function createTrade($accountId)
     {
-        return new Trade($this->steamCommunity, $accountId);
+        return new Trade($accountId);
     }
 
     /**
@@ -379,7 +452,7 @@ class TradeOffers
 
         if ($tradeOffer instanceof TradeOffer && $tradeId = $tradeOffer->getTradeId()) {
             $url = 'https://steamcommunity.com/trade/' . $tradeId . '/receipt/';
-            $response = $this->steamCommunity->cURL($url);
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
             $pattern = '/oItem = ({.*});/';
             
             preg_match_all($pattern, $response, $matches);

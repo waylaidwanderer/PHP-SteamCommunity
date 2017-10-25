@@ -10,26 +10,25 @@ namespace waylaidwanderer\SteamCommunity\TradeOffers;
 
 use waylaidwanderer\SteamCommunity\Helper;
 use waylaidwanderer\SteamCommunity\SteamCommunity;
+use waylaidwanderer\SteamCommunity\Enum\LoginResult;
 use waylaidwanderer\SteamCommunity\TradeOffers\Trade\TradeAsset;
 use waylaidwanderer\SteamCommunity\TradeOffers\Trade\TradeUser;
 
 class Trade implements \JsonSerializable
 {
     private $newVersion = true;
-    private $version = 1;
+    private $version = 2;
     private $me;
     private $them;
-    private $steamCommunity;
     private $accountId;
 
     private $error = '';
     private $message = '';
 
-    public function __construct(SteamCommunity $steamCommunity, $accountId)
+    public function __construct($accountId)
     {
         $this->me = new TradeUser($this);
         $this->them = new TradeUser($this);
-        $this->steamCommunity = $steamCommunity;
         $this->accountId = $accountId;
     }
 
@@ -75,29 +74,42 @@ class Trade implements \JsonSerializable
         $url = 'https://steamcommunity.com/tradeoffer/new/send';
         $referer = 'https://steamcommunity.com/tradeoffer/new/' .
             '?partner=' . $this->accountId . ($token ? '&token=' . $token : '');
-        $params = [
-            'sessionid' => $this->steamCommunity->getSessionId(),
-            'serverid' => '1',
-            'partner' => Helper::toCommunityID($this->accountId),
-            'tradeoffermessage' => $this->message,
-            'json_tradeoffer' => json_encode($this),
-            'trade_offer_create_params' => (empty($token) ? "{}" : json_encode([
-                'trade_offer_access_token' => $token
-            ]))
-        ];
-        $response = $this->steamCommunity->cURL($url, $referer, $params);
-        $json = json_decode($response, true);
-        if (is_null($json)) {
-            $this->error = 'Empty response';
-            return 0;
-        } else {
-            if (isset($json['tradeofferid'])) {
-                return $json['tradeofferid'];
+
+        $failures = 0; $tradeOfferId = false;
+        while ($failures != 5) {
+            sleep(1);
+
+            $params = [
+                'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
+                'serverid' => '1',
+                'partner' => Helper::toCommunityID($this->accountId),
+                'tradeoffermessage' => $this->message,
+                'json_tradeoffer' => json_encode($this->jsonSerialize()),
+                'trade_offer_create_params' => (empty($token) ? "{}" : json_encode([
+                    'trade_offer_access_token' => $token
+                ]))
+            ];
+
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params);
+
+            $json = json_decode($response, true);
+            if (is_null($json)) {
+                $this->error = 'Empty response';
+                SteamCommunity::getInstance()->reLogin(LoginResult::Need2FA);
             } else {
-                $this->error = $json['strError'];
-                return 0;
+                if (isset($json['tradeofferid'])) {
+                    $tradeOfferId = $json['tradeofferid'];
+                    break;
+                } else {
+                    $this->error = $json['strError'];
+                    break;
+                }
             }
+
+            $failures++;
         }
+
+        return $tradeOfferId;
     }
 
     /**

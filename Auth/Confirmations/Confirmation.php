@@ -6,14 +6,13 @@
  * Time: 3:00 PM
  */
 
-namespace waylaidwanderer\SteamCommunity\MobileAuth\Confirmations;
+namespace waylaidwanderer\SteamCommunity\Auth\Confirmations;
 
 
 class Confirmation
 {
     private $confirmationId;
     private $confirmationKey;
-    private $confirmationOfferId;
     private $confirmationDescription;
 
     public function __construct($confirmationId, $confirmationKey, $confirmationOfferId, $confirmationDescription)
@@ -43,16 +42,16 @@ class Confirmation
     /**
      * @return string
      */
-    public function getConfirmationDescription()
+    public function getConfirmationOfferId()
     {
-        return $this->confirmationDescription;
+        return $this->confirmationOfferId;
     }
 
     /**
      * @return string
      */
-    public function getConfirmationOfferId()
+    public function getConfirmationDescription()
     {
-        return $this->confirmationOfferId;
+        return $this->confirmationDescription;
     }
 }

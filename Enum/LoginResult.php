@@ -18,4 +18,5 @@ abstract class LoginResult
     const NeedCaptcha = "NeedCaptcha";
     const Need2FA = "Need2FA";
     const NeedEmail = "NeedEmail";
+    const TooManyFailedLogins = "TooManyFailedLogins";
 }

@@ -8,12 +8,14 @@
 
 namespace waylaidwanderer\SteamCommunity\TradeOffers;
 
-
+use waylaidwanderer\SteamCommunity\SteamCommunity;
+use waylaidwanderer\SteamCommunity\Helper;
 use waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer\Item;
 
 class TradeOffer
 {
     private $tradeOfferId;
+    private $myAccountId;
     private $otherAccountId;
     private $message = '';
     private $expirationTime;
@@ -30,11 +32,16 @@ class TradeOffer
 
     public function __construct($json = [])
     {
+        if (empty($json)) {
+            return null;
+        }
+
         if (isset($json['tradeofferid'])) {
             $this->tradeOfferId = $json['tradeofferid'];
         }
+        $this->myAccountId = SteamCommunity::getInstance()->get('steamId');
         if (isset($json['accountid_other'])) {
-            $this->otherAccountId = $json['accountid_other'];
+            $this->otherAccountId = Helper::toCommunityID($json['accountid_other']);
         }
         if (isset($json['message'])) {
             $this->message = $json['message'];
@@ -43,19 +50,23 @@ class TradeOffer
             $this->tradeOfferState = $json['trade_offer_state'];
         }
         if (isset($json['items_to_receive'])) {
-            $this->itemsToReceive = [];
+            $this->itemsToReceive = array();
             if (is_array($json['items_to_receive'])) {
                 foreach ($json['items_to_receive'] as $item) {
                     $this->itemsToReceive[] = new Item($item);
                 }
+
+                $this->setItemsToReceive($this->otherAccountId);
             }
         }
         if (isset($json['items_to_give'])) {
-            $this->itemsToGive = [];
+            $this->itemsToGive = array();
             if (is_array($json['items_to_give'])) {
                 foreach ($json['items_to_give'] as $item) {
                     $this->itemsToGive[] = new Item($item);
                 }
+
+                $this->setItemsToGive($this->myAccountId);
             }
         }
         if (isset($json['is_our_offer'])) {
@@ -81,6 +92,99 @@ class TradeOffer
         }
     }
 
+    private function getItemDetailsFromHover($steamId, $items)
+    {
+        if (empty($items)) {
+            return array();
+        }
+
+        $steamId = Helper::toCommunityID($steamId);
+        $pattern = '/\{(?:[^{}]|(?R))*\}/x';
+        $linePattern = '/^.*\BuildHover\b.*$/m';
+        $url = 'http://steamcommunity.com/economy/itemclasshover/';
+
+        foreach ($items as &$item) {
+            $itemUrl = $url . $item->getAppId() . '/';
+            if ($item->getInstanceId()) {
+                $itemUrl .= $item->getClassId() . '/' . $item->getInstanceId();
+            } else {
+                $itemUrl .= $item->getClassId();
+            }
+
+            $itemUrl .= '?content_only=1&omit_owner=1&l=english&o=' . $steamId;
+
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($itemUrl);
+            
+            preg_match($linePattern, $response, $lineMatch);
+            if (!$lineMatch) {
+                continue;
+            }
+
+            $lineMatch = reset($lineMatch);
+            preg_match($pattern, $lineMatch, $jsonMatch);
+            if (!isset($jsonMatch[0])) {
+                continue;
+            }
+
+            $hoverItem = Helper::processJson($jsonMatch[0]);
+
+            if (array_key_exists('id', $hoverItem)) {
+                $item->setAssetId($hoverItem['id']);
+            }
+
+            if (!$item->getInstanceId() && !empty($hoverItem['instanceid'])) {
+                $item->setInstanceId($hoverItem['instanceid']);
+            }
+
+            if (!$item->getContextId() && !empty($hoverItem['contextid'])) {
+                $item->setContextId($hoverItem['contextid']);
+            }
+            
+            $item->setName($hoverItem['name']);
+            $item->setMarketName($hoverItem['market_hash_name']);
+            $item->setType($hoverItem['type']);
+            $item->setIconUrl($hoverItem['icon_url']);
+            if (array_key_exists('icon_url_large', $hoverItem)) {
+                $item->setIconUrlLarge($hoverItem['icon_url_large']);
+            }
+            $item->setColor($hoverItem['name_color']);
+        }
+
+        return $items;
+    }
+
+    private function getItemDetailsFromInventory($steamId, $items)
+    {
+        if (empty($items)) {
+            return array();
+        }
+
+        $steamId = Helper::toCommunityID($steamId);
+
+        $inventoryCache = array();
+        $inventory = SteamCommunity::getInstance()->getClassFromCache('User\Inventory');
+
+        foreach ($items as &$item) {
+            $identifier = $steamId . '_' . $item->getAppId() . '_' . $item->getContextId();
+            if (!array_key_exists($identifier, $inventoryCache)) {
+                $inventoryCache[$identifier] = $inventory->loadInventory($steamId, $item->getAppId(), $item->getContextId());
+            }
+
+            if (array_key_exists($item->getAssetId(), $inventoryCache[$identifier])) {
+                $invItem = $inventoryCache[$identifier][$item->getAssetId()];
+                if (!empty($invItem['name'])) { $item->setName($invItem['name']); }
+                if (!empty($invItem['market_name'])) { $item->setMarketName($invItem['market_name']); }
+                if (!empty($invItem['type'])) { $item->setType($invItem['type']); }
+                if (!empty($invItem['icon_url'])) { $item->setIconUrl($invItem['icon_url']); }
+                if (!empty($invItem['icon_url_large'])) { $item->setIconUrlLarge($invItem['icon_url_large']); }
+                if (!empty($invItem['name_color'])) { $item->setColor($invItem['name_color']); }
+
+            }
+        }
+
+        return $items;
+    }
+
     /**
      * @return string
      */
@@ -95,6 +199,22 @@ class TradeOffer
     public function setTradeOfferId($tradeOfferId)
     {
         $this->tradeOfferId = $tradeOfferId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMyAccountId()
+    {
+        return $this->myAccountId;
+    }
+
+    /**
+     * @param string $myAccountId
+     */
+    public function setMyAccountId($myAccountId)
+    {
+        $this->myAccountId = $myAccountId;
     }
 
     /**
@@ -170,12 +290,19 @@ class TradeOffer
         return $this->itemsToGive;
     }
 
-    /**
-     * @param Item[] $itemsToGive
-     */
-    public function setItemsToGive($itemsToGive)
+    public function setItemsToGive($steamId, $itemsToGive = null, $method = 'hover')
     {
-        $this->itemsToGive = $itemsToGive;
+        if ($itemsToGive === null) {
+            $itemsToGive = $this->itemsToGive;
+        }
+
+        if ($method == 'hover') {
+            $this->itemsToGive = $this->getItemDetailsFromHover($steamId, $itemsToGive);
+        }
+
+        if ($method == 'inventory') {
+            $this->itemsToGive = $this->getItemDetailsFromInventory($steamId, $itemsToGive);
+        }
     }
 
     /**
@@ -186,12 +313,19 @@ class TradeOffer
         return $this->itemsToReceive;
     }
 
-    /**
-     * @param Item[] $itemsToReceive
-     */
-    public function setItemsToReceive($itemsToReceive)
+    public function setItemsToReceive($steamId, $itemsToReceive = null, $method = 'hover')
     {
-        $this->itemsToReceive = $itemsToReceive;
+        if ($itemsToReceive === null) {
+            $itemsToReceive = $this->itemsToReceive;
+        }
+
+        if ($method == 'hover') {
+            $this->itemsToReceive = $this->getItemDetailsFromHover($steamId, $itemsToReceive);
+        }
+
+        if ($method == 'inventory') {
+            $this->itemsToReceive = $this->getItemDetailsFromInventory($steamId, $itemsToReceive);
+        }
     }
 
     /**

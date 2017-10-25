@@ -6,7 +6,7 @@
  * Time: 3:09 PM
  */
 
-namespace waylaidwanderer\SteamCommunity\MobileAuth;
+namespace waylaidwanderer\SteamCommunity\Auth;
 
 
 class WgTokenInvalidException extends \Exception

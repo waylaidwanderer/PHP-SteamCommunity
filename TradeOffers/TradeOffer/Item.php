@@ -12,10 +12,16 @@ namespace waylaidwanderer\SteamCommunity\TradeOffers\TradeOffer;
 class Item
 {
     private $appId;
-    private $contextId;
+    private $contextId = 2;
     private $assetId;
     private $currencyId;
     private $classId;
+    private $name;
+    private $marketName;
+    private $type;
+    private $iconUrl;
+    private $iconUrlLarge;
+    private $color;
     private $instanceId = 0;
     private $amount = 1;
     private $missing = false;
@@ -158,6 +164,102 @@ class Item
     }
 
     /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMarketName()
+    {
+        return $this->marketName;
+    }
+
+    /**
+     * @param string $marketName
+     */
+    public function setMarketName($marketName)
+    {
+        $this->marketName = $marketName;
+    }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * @param string $type
+     */
+    public function setType($type)
+    {
+        $this->type = $type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIconUrl()
+    {
+        return $this->iconUrl;
+    }
+
+    /**
+     * @param string $iconUrl
+     */
+    public function setIconUrl($iconUrl)
+    {
+        $this->iconUrl = $iconUrl;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIconUrlLarge()
+    {
+        return $this->iconUrlLarge;
+    }
+
+    /**
+     * @param string $iconUrlLarge
+     */
+    public function setIconUrlLarge($iconUrlLarge)
+    {
+        $this->iconUrlLarge = $iconUrlLarge;
+    }
+
+    /**
+     * @return string
+     */
+    public function getColor()
+    {
+        return $this->color;
+    }
+
+    /**
+     * @param string $color
+     */
+    public function setColor($color)
+    {
+        $this->color = $color;
+    }
+
+    /**
      * @return boolean
      */
     public function isMissing()
@@ -171,5 +273,10 @@ class Item
     public function setMissing($missing)
     {
         $this->missing = $missing;
+    }
+
+    public function toArray()
+    {
+        return get_object_vars($this);
     }
 }

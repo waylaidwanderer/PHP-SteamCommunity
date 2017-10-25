@@ -8,27 +8,33 @@
 
 namespace waylaidwanderer\SteamCommunity;
 
-
+use waylaidwanderer\SteamCommunity\SteamCommunity;
 use waylaidwanderer\SteamCommunity\Group\History\HistoryItem;
 
 class Group
 {
     const BASE_URL = "http://steamcommunity.com/gid/";
-    private $steamCommunity;
+    const BASE_GROUP_URL = "http://steamcommunity.com/groups/";
+
     private $gid;
+    private $url;
     private $xml;
 
-    public function __construct($gid, SteamCommunity $steamCommunity = null)
+    public function setGroupId($gid)
     {
         $this->gid = $gid;
-        $this->steamCommunity = is_null($steamCommunity) ? new SteamCommunity() : $steamCommunity;
+    }
+
+    public function setGroupUrl($url)
+    {
+        $this->url = $url;
     }
 
     public function getGroupXml($page = 1)
     {
         if ($this->xml == null) {
             $url = self::BASE_URL . $this->gid . '/memberslistxml/?xml=1&p=' . $page;
-            $response = Helper::cURL($url);
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
             $this->xml = new \SimpleXMLElement($response);
         }
 
@@ -89,6 +95,10 @@ class Group
         $history = [];
 
         $xpath = $this->getHistoryXPath($page);
+        if (empty($xpath)) {
+            return $history;
+        }
+
         /** @var \DOMElement[] $historyItems */
         $historyItems = $xpath->query('//div[contains(@class, "group_summary")]/div[contains(@class, "historyItem")]');
         foreach ($historyItems as $historyItem) {
@@ -125,8 +135,12 @@ class Group
 
     private function getHistoryXPath($page = 1)
     {
-        $url = self::BASE_URL . $this->gid . '/history?p=' . $page;
-        $html = $this->steamCommunity->cURL($url);
+        $url = self::BASE_GROUP_URL . $this->url . '/history?p=' . $page;
+        $html = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
+        if (empty($html)) {
+            return false;
+        }
+
         libxml_use_internal_errors(true);
         $doc = new \DOMDocument();
         $doc->loadHTML($html);
