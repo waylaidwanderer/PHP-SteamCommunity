@@ -75,41 +75,41 @@ class Trade implements \JsonSerializable
         $referer = 'https://steamcommunity.com/tradeoffer/new/' .
             '?partner=' . $this->accountId . ($token ? '&token=' . $token : '');
 
-		$failures = 0; $tradeOfferId = false;
-		while ($failures != 5) {
-			sleep(1);
+        $failures = 0; $tradeOfferId = false;
+        while ($failures != 5) {
+            sleep(1);
 
-			$params = [
-				'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
-				'serverid' => '1',
-				'partner' => Helper::toCommunityID($this->accountId),
-				'tradeoffermessage' => $this->message,
-				'json_tradeoffer' => json_encode($this->jsonSerialize()),
-				'trade_offer_create_params' => (empty($token) ? "{}" : json_encode([
-					'trade_offer_access_token' => $token
-				]))
-			];
+            $params = [
+                'sessionid' => SteamCommunity::getInstance()->get('sessionId'),
+                'serverid' => '1',
+                'partner' => Helper::toCommunityID($this->accountId),
+                'tradeoffermessage' => $this->message,
+                'json_tradeoffer' => json_encode($this->jsonSerialize()),
+                'trade_offer_create_params' => (empty($token) ? "{}" : json_encode([
+                    'trade_offer_access_token' => $token
+                ]))
+            ];
 
-			$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params);
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $referer, $params);
 
-			$json = json_decode($response, true);
-			if (is_null($json)) {
-				$this->error = 'Empty response';
-				SteamCommunity::getInstance()->reLogin(LoginResult::Need2FA);
-			} else {
-				if (isset($json['tradeofferid'])) {
-					$tradeOfferId = $json['tradeofferid'];
-					break;
-				} else {
-					$this->error = $json['strError'];
-					break;
-				}
-			}
+            $json = json_decode($response, true);
+            if (is_null($json)) {
+                $this->error = 'Empty response';
+                SteamCommunity::getInstance()->reLogin(LoginResult::Need2FA);
+            } else {
+                if (isset($json['tradeofferid'])) {
+                    $tradeOfferId = $json['tradeofferid'];
+                    break;
+                } else {
+                    $this->error = $json['strError'];
+                    break;
+                }
+            }
 
-			$failures++;
-		}
+            $failures++;
+        }
 
-		return $tradeOfferId;
+        return $tradeOfferId;
     }
 
     /**

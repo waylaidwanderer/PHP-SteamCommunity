@@ -9,33 +9,33 @@ class Inventory
 {
     private $steamId;
     private $profile;
-	private $cacheTime;
+    private $cacheTime;
 
-	private $iconUrl = 'https://steamcommunity-a.akamaihd.net/economy/image/';
+    private $iconUrl = 'https://steamcommunity-a.akamaihd.net/economy/image/';
 
-	public function __construct($cacheTime = 60, $language = 'english')
-	{
-		$this->cacheTime = $cacheTime;
-		$this->language = $language;
-	}
+    public function __construct($cacheTime = 60, $language = 'english')
+    {
+        $this->cacheTime = $cacheTime;
+        $this->language = $language;
+    }
 
     public function loadInventory($steamId, $appId = 1, $contextId = 2, $useCache = false)
     {
-		if ($appId == 1) {
-			$steamCommunity = SteamCommunity::getInstance();
-			$globalAppIds = $steamCommunity->get('appIds');
-			if (empty($globalAppIds)) {
-				return false;
-			}
+        if ($appId == 1) {
+            $steamCommunity = SteamCommunity::getInstance();
+            $globalAppIds = $steamCommunity->get('appIds');
+            if (empty($globalAppIds)) {
+                return false;
+            }
 
-			return $this->loadChosenInventory($steamId, $globalAppIds, $globalAppDetails['contextId'], $useCache);
-		}
+            return $this->loadChosenInventory($steamId, $globalAppIds, $globalAppDetails['contextId'], $useCache);
+        }
 
-		return $this->loadChosenInventory($steamId, $appId, $contextId, $useCache);
+        return $this->loadChosenInventory($steamId, $appId, $contextId, $useCache);
     }
 
-	private function loadChosenInventory($steamId, $appId, $contextId, $useCache)
-	{
+    private function loadChosenInventory($steamId, $appId, $contextId, $useCache)
+    {
         if (!is_array($appId)) {
             $appId = array($appId);
         }
@@ -77,35 +77,35 @@ class Inventory
         }
 
         return $inventories;
-	}
+    }
 
     private function getSteamInventory($steamId, $appId, $contextId, $allData = array(), $startAssetId = false)
     {
         $steamId = Helper::to64ID($steamId);
         if (!$this->checkInfo($steamId, $appId, $contextId)) {
-			return false;
-		}
+            return false;
+        }
 
-		$json = $this->querySteam($steamId, $appId, $contextId, $startAssetId);
+        $json = $this->querySteam($steamId, $appId, $contextId, $startAssetId);
 
-		if (!$json || empty($json['success']) || count($json) == 0 || !array_key_exists('assets', $json) || !array_key_exists('descriptions', $json)) {
-			return false;
-		}
+        if (!$json || empty($json['success']) || count($json) == 0 || !array_key_exists('assets', $json) || !array_key_exists('descriptions', $json)) {
+            return false;
+        }
 
-		if (empty($allData)) {
-			$allData = array(
-				'assets' => $json['assets'],
-				'descriptions' => $json['descriptions'],
-				'totalInventoryCount' => $json['total_inventory_count']
-			);
-		} else {
-			$allData['assets'] = $this->mergeResponses($allData['assets'], $json['assets']);
-			$allData['descriptions'] = $this->mergeResponses($allData['descriptions'], $json['descriptions']);
-		}
+        if (empty($allData)) {
+            $allData = array(
+                'assets' => $json['assets'],
+                'descriptions' => $json['descriptions'],
+                'totalInventoryCount' => $json['total_inventory_count']
+            );
+        } else {
+            $allData['assets'] = $this->mergeResponses($allData['assets'], $json['assets']);
+            $allData['descriptions'] = $this->mergeResponses($allData['descriptions'], $json['descriptions']);
+        }
 
-		if (isset($json['more_items']) && $json['more_items'] && isset($json['last_assetid'])) {
-			return $this->getSteamInventory($steamId, $appId, $contextId, $allData, $json['last_assetid']);
-		}
+        if (isset($json['more_items']) && $json['more_items'] && isset($json['last_assetid'])) {
+            return $this->getSteamInventory($steamId, $appId, $contextId, $allData, $json['last_assetid']);
+        }
 
         return $allData;
     }
@@ -123,33 +123,33 @@ class Inventory
         return $globalResponse;
     }
 
-	private function querySteam($steamId, $appId, $contextId, $startAssetId = false, $count = 500, $trading = true)
-	{
+    private function querySteam($steamId, $appId, $contextId, $startAssetId = false, $count = 500, $trading = true)
+    {
         $url = $this->steamApiUrl($steamId, $appId, $contextId, $startAssetId, $count, $trading, $this->language);
 
-		$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
-		if (!$response = Helper::processJson($response)) {
-			return false;
-		}
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url);
+        if (!$response = Helper::processJson($response)) {
+            return false;
+        }
 
-        return $response;		
-	}
+        return $response;        
+    }
 
     public function parseItems($data, $contextId)
     {
-		$descriptions = array();
+        $descriptions = array();
         foreach ($data['descriptions'] as $dataItem) {
             $name = trim(@end((explode('|', $dataItem['name']))));
 
             $desc = null;
-			if (isset($dataItem['descriptions'])) {
-				$desc = $this->parseDataArray($dataItem['descriptions']);
-			}
+            if (isset($dataItem['descriptions'])) {
+                $desc = $this->parseDataArray($dataItem['descriptions']);
+            }
 
             $actions = null;
-			if (isset($dataItem['actions'])) {
-				$actions = $this->parseDataArray($dataItem['actions']);
-			}
+            if (isset($dataItem['actions'])) {
+                $actions = $this->parseDataArray($dataItem['actions']);
+            }
 
             $tags = $this->parseItemTags($dataItem['tags']);
             $cat = (isset($tags['category']) ? $tags['category'] : null);
@@ -176,11 +176,11 @@ class Inventory
                 'name_color'           => (isset($dataItem['name_color']) ? '#' . $dataItem['name_color'] : null),
             ];
 
-			foreach ($array as $key => $value) {
-				if ($value === null) {
-					unset($array[$key]);
-				}
-			}
+            foreach ($array as $key => $value) {
+                if ($value === null) {
+                    unset($array[$key]);
+                }
+            }
 
             $unique = $this->getUniqueItemId($dataItem['appid'], $dataItem['classid'], $dataItem['instanceid'], $contextId);
             $descriptions[$unique] = $array;
@@ -188,21 +188,21 @@ class Inventory
             unset($desc, $tags, $cat, $array, $asset, $unique);
         }
 
-		$items = array();
+        $items = array();
 
-		foreach ($data['assets'] as $asset) {
+        foreach ($data['assets'] as $asset) {
             $unique = $this->getUniqueItemId($asset['appid'], $asset['classid'], $asset['instanceid'], $contextId);
             if (!array_key_exists($unique, $descriptions)) {
                 continue;
             }
 
-			$items[$asset['assetid']] = array(
+            $items[$asset['assetid']] = array(
                 'asset_id' => $asset['assetid'],
                 'amount' => $asset['amount']
             ) + $descriptions[$unique];
 
             unset($unique, $dataAsset);
-		}
+        }
 
         return $items;
     }

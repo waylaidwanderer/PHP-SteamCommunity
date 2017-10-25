@@ -80,13 +80,13 @@ class Helper
         return (float) str_replace(',', '.', $removedThousendSeparator);
     }
 
-	public static function processJson($data)
-	{
-		$data = json_decode($data, true);
-		if (json_last_error() != JSON_ERROR_NONE) {
-			return false;
-		}
+    public static function processJson($data)
+    {
+        $data = json_decode($data, true);
+        if (json_last_error() != JSON_ERROR_NONE) {
+            return false;
+        }
 
-		return $data;
-	}
+        return $data;
+    }
 }

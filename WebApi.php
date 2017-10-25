@@ -7,7 +7,7 @@ use waylaidwanderer\SteamCommunity\SteamException;
 
 class WebApi
 {
-	protected $apiUrl = 'https://api.steampowered.com/';
+    protected $apiUrl = 'https://api.steampowered.com/';
 
     public function setApiKey($sessionId, $recursionLevel = 1)
     {
@@ -33,7 +33,7 @@ class WebApi
                 $apiKey = '';
             }
 
-			SteamCommunity::getInstance()->set('apiKey', $apiKey);
+            SteamCommunity::getInstance()->set('apiKey', $apiKey);
         }
     }
 
@@ -55,8 +55,8 @@ class WebApi
         return SteamCommunity::get('apiKey');
     }
 
-	public function getApiUrl()
-	{
-		return $this->apiUrl;
-	}
+    public function getApiUrl()
+    {
+        return $this->apiUrl;
+    }
 }

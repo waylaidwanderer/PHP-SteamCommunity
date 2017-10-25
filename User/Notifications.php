@@ -24,9 +24,9 @@ class Notifications
     public function getNotifications()
     {
         $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/actions/GetNotificationCounts');
-		if (!$response = Helper::processJson($response)) {
-			return false;
-		}
+        if (!$response = Helper::processJson($response)) {
+            return false;
+        }
 
         if (!array_key_exists('notifications', $response)) {
             return false;

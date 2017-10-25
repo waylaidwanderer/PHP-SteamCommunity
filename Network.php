@@ -6,22 +6,22 @@ use waylaidwanderer\SteamCommunity\SteamCommunity;
 
 class Network
 {
-	/**
-	 * Proxy Format
-	 * 
-	 * array(
-	 *      'type' => CURLPROXY_HTTP,
-	 *		'address' => '127.0.0.1:8888',
-	 *		'auth' => 'user:password'
-	 * )
-	 *
-	 */
+    /**
+     * Proxy Format
+     * 
+     * array(
+     *      'type' => CURLPROXY_HTTP,
+     *        'address' => '127.0.0.1:8888',
+     *        'auth' => 'user:password'
+     * )
+     *
+     */
 
     public static $DEFAULT_MOBILE_COOKIES = ['mobileClientVersion' => '0 (2.1.3)', 'mobileClient' => 'android', 'Steam_Language' => 'english', 'dob' => ''];
 
-	private $defaultProxyType = CURLPROXY_HTTP;
-	private $proxies = array();
-	private $interfaces = array();
+    private $defaultProxyType = CURLPROXY_HTTP;
+    private $proxies = array();
+    private $interfaces = array();
 
     public function __construct()
     {
@@ -45,12 +45,12 @@ class Network
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
 
-		if (isset($options['connectionTimeOut'])) {
-			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $options['connectionTimeOut']);
-		}
-		if (isset($options['timeOut'])) {
-			curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeOut']);
-		}
+        if (isset($options['connectionTimeOut'])) {
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $options['connectionTimeOut']);
+        }
+        if (isset($options['timeOut'])) {
+            curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeOut']);
+        }
 
         curl_setopt($ch, CURLOPT_TCP_FASTOPEN, 1);
         curl_setopt($ch, CURLOPT_TCP_NODELAY, 1);
@@ -67,7 +67,7 @@ class Network
         curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie);
         curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie);
 
-		curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+        curl_setopt($ch, CURLOPT_ENCODING, "gzip");
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         if (SteamCommunity::getInstance()->get('mobile')) {
@@ -82,18 +82,18 @@ class Network
         }
         if (isset($postData)) {
             curl_setopt($ch, CURLOPT_POST, true);
-			if (is_array($postData)) {
-				$postStr = "";
-				foreach ($postData as $key => $value) {
-					if ($postStr)
-						$postStr .= "&";
-					$postStr .= $key . "=" . $value;
-				}
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $postStr);
-			}
+            if (is_array($postData)) {
+                $postStr = "";
+                foreach ($postData as $key => $value) {
+                    if ($postStr)
+                        $postStr .= "&";
+                    $postStr .= $key . "=" . $value;
+                }
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $postStr);
+            }
         }
 
-		curl_setopt($ch, CURLOPT_HEADERFUNCTION, array(&$this, 'outputCURLHeaders'));
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, array(&$this, 'outputCURLHeaders'));
 
         if (!isset($options['defaultNetwork']) || !$options['defaultNetwork']) {
             if ($proxy = $this->chooseRandomProxy()) {
@@ -122,44 +122,44 @@ class Network
         return $output;
     }
 
-	public function chooseRandomProxy()
-	{
-		if (empty($this->proxies)) {
-			return false;
-		}
+    public function chooseRandomProxy()
+    {
+        if (empty($this->proxies)) {
+            return false;
+        }
 
-		return $this->proxies[array_rand($this->proxies)];
-	}
+        return $this->proxies[array_rand($this->proxies)];
+    }
 
-	public function chooseRandomInterface()
-	{
-		if (empty($this->interfaces)) {
-			return false;
-		}
+    public function chooseRandomInterface()
+    {
+        if (empty($this->interfaces)) {
+            return false;
+        }
 
-		return $this->interfaces[array_rand($this->interfaces)];
-	}
+        return $this->interfaces[array_rand($this->interfaces)];
+    }
 
-	protected function outputCURLHeaders($curl, $headerLine)
-	{
-		// echo '<pre>'; var_dump($headerLine); echo '</pre>';
-		return strlen($headerLine);
-	}
+    protected function outputCURLHeaders($curl, $headerLine)
+    {
+        // echo '<pre>'; var_dump($headerLine); echo '</pre>';
+        return strlen($headerLine);
+    }
 
-	protected function validateProxy($proxy)
-	{
-		if (!isset($proxy['address'])) {
-			return false;
-		}
+    protected function validateProxy($proxy)
+    {
+        if (!isset($proxy['address'])) {
+            return false;
+        }
 
-		if (count(explode(':', $proxy['address'])) !== 2) {
-			return false;
-		}
+        if (count(explode(':', $proxy['address'])) !== 2) {
+            return false;
+        }
 
-		if (isset($proxy['auth']) && count(explode(':', $proxy['auth'])) !== 2) {
-			return false;
-		}
+        if (isset($proxy['auth']) && count(explode(':', $proxy['auth'])) !== 2) {
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 }

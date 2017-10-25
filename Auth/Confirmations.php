@@ -24,44 +24,44 @@ class Confirmations
     {
         $confirmations = [];
 
-		$failures = 0;
-		while ($failures != 5) {
-			$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($this->generateConfirmationUrl());
-			if (empty($response)) {
-				SteamCommunity::getInstance()->reLogin(false, true); sleep(3); continue;
-			}
+        $failures = 0;
+        while ($failures != 5) {
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($this->generateConfirmationUrl());
+            if (empty($response)) {
+                SteamCommunity::getInstance()->reLogin(false, true); sleep(3); continue;
+            }
 
-			if (strpos($response, '<div>Nothing to confirm</div>') !== false) {
-				break;
-			}
+            if (strpos($response, '<div>Nothing to confirm</div>') !== false) {
+                break;
+            }
 
-			if (!empty($response) && strpos($response, 'Invalid authenticator') === false) {
-				libxml_use_internal_errors(true);
+            if (!empty($response) && strpos($response, 'Invalid authenticator') === false) {
+                libxml_use_internal_errors(true);
 
-				$doc = new \DOMDocument();
-				$doc->loadHTML($response);
-				$xpath = new \DOMXPath($doc);
+                $doc = new \DOMDocument();
+                $doc->loadHTML($response);
+                $xpath = new \DOMXPath($doc);
 
-				$confDescRegex = '/((Confirm|Trade with|Sell -).*)/';
+                $confDescRegex = '/((Confirm|Trade with|Sell -).*)/';
 
-				$foundConfirmations = $xpath->query('//div[@class="mobileconf_list_entry"]');
-				foreach ($foundConfirmations as $confirmation) {
-					$confId = $confirmation->getAttribute('data-confid');
-					$confKey = $confirmation->getAttribute('data-key');
-					$confOfferId = $confirmation->getAttribute('data-creator');
-					$confDesc = false;
+                $foundConfirmations = $xpath->query('//div[@class="mobileconf_list_entry"]');
+                foreach ($foundConfirmations as $confirmation) {
+                    $confId = $confirmation->getAttribute('data-confid');
+                    $confKey = $confirmation->getAttribute('data-key');
+                    $confOfferId = $confirmation->getAttribute('data-creator');
+                    $confDesc = false;
 
-					$confirmations[] = new Confirmation($confId, $confKey, $confOfferId, $confDesc);
-				}
+                    $confirmations[] = new Confirmation($confId, $confKey, $confOfferId, $confDesc);
+                }
 
-				break;
-			}
+                break;
+            }
 
-			$failures++;
+            $failures++;
 
-			SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
-			sleep(3);
-		}
+            SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
+            sleep(3);
+        }
 
         return $confirmations;
     }
@@ -81,22 +81,22 @@ class Confirmations
     {
         $identitySecret = base64_decode(SteamCommunity::getInstance()->get('identitySecret'));
 
-		$dataLen = 8;
-		if ($tag) {
-			if (strlen($tag) > 32) {
-				$dataLen += 32;
-			} else {
-				$dataLen += strlen($tag);
-			}
-		}
+        $dataLen = 8;
+        if ($tag) {
+            if (strlen($tag) > 32) {
+                $dataLen += 32;
+            } else {
+                $dataLen += strlen($tag);
+            }
+        }
 
-		$buffer = new Buffer($dataLen);
-		$buffer->writeInt32BE(0, 0); // This will stop working in 2038!
-		$buffer->writeInt32BE($time, 4);
+        $buffer = new Buffer($dataLen);
+        $buffer->writeInt32BE(0, 0); // This will stop working in 2038!
+        $buffer->writeInt32BE($time, 4);
 
-		if ($tag) {
-			$buffer->write($tag, 8);
-		}
+        if ($tag) {
+            $buffer->write($tag, 8);
+        }
 
         $code = hash_hmac("sha1", $buffer, $identitySecret, true);
         return base64_encode($code);
@@ -109,27 +109,27 @@ class Confirmations
      */
     public function getConfirmationTradeOfferId(Confirmation $confirmation)
     {
-		$tradeOfferId = false;
-		$failures = 0;
+        $tradeOfferId = false;
+        $failures = 0;
 
-		while ($failures != 5) {
-			$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/mobileconf/details/' . $confirmation->getConfirmationId() . '?' . $this->generateConfirmationQueryParams('details'));
-			if (!empty($response)) {
-				$json = json_decode($response, true);
-				if (isset($json['success']) && $json['success']) {
-					$html = $json['html'];
-					if (preg_match('/<div class="tradeoffer" id="tradeofferid_(\d+)" >/', $html, $matches)) {
-						$tradeOfferId = $matches[1];
-						break;
-					}
-				}
-			}
+        while ($failures != 5) {
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/mobileconf/details/' . $confirmation->getConfirmationId() . '?' . $this->generateConfirmationQueryParams('details'));
+            if (!empty($response)) {
+                $json = json_decode($response, true);
+                if (isset($json['success']) && $json['success']) {
+                    $html = $json['html'];
+                    if (preg_match('/<div class="tradeoffer" id="tradeofferid_(\d+)" >/', $html, $matches)) {
+                        $tradeOfferId = $matches[1];
+                        break;
+                    }
+                }
+            }
 
-			$failures++;
+            $failures++;
 
-			SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
-			sleep(3);
-		}
+            SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
+            sleep(3);
+        }
 
         return $tradeOfferId;
     }
@@ -176,56 +176,56 @@ class Confirmations
 
     private function _sendMultiConfirmationAjax(array $confirmations, $op)
     {
-		$url = 'https://steamcommunity.com/mobileconf/ajaxop?op=' . $op . '&' . $this->generateConfirmationQueryParams($op);
+        $url = 'https://steamcommunity.com/mobileconf/ajaxop?op=' . $op . '&' . $this->generateConfirmationQueryParams($op);
 
-		foreach ($confirmations as $confirmation) {
-			if ($confirmation instanceof Confirmation) {
-				$url .= '&cid[]=' . $confirmation->getConfirmationId() . '&ck[]=' . $confirmation->getConfirmationKey();
-			}
-		}
+        foreach ($confirmations as $confirmation) {
+            if ($confirmation instanceof Confirmation) {
+                $url .= '&cid[]=' . $confirmation->getConfirmationId() . '&ck[]=' . $confirmation->getConfirmationKey();
+            }
+        }
 
-		$success = false;
-		$failures = 0;
-		while ($failures != 5) {
-			$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, null, true);
+        $success = false;
+        $failures = 0;
+        while ($failures != 5) {
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, null, true);
 
-			if (!empty($response)) {
-				$json = json_decode($response, true);
-				if (isset($json['success'])) {
-					$success = true;
-					break;
-				}
-			}
+            if (!empty($response)) {
+                $json = json_decode($response, true);
+                if (isset($json['success'])) {
+                    $success = true;
+                    break;
+                }
+            }
 
-			$failures++;
-			SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
-			sleep(3);
-		}
+            $failures++;
+            SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
+            sleep(3);
+        }
 
         return $success;
     }
 
     private function _sendConfirmationAjax(Confirmation $confirmation, $op)
     {
-		$success = false;
-		$failures = 0;
-		while ($failures != 5) {
-			$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/mobileconf/ajaxop?op=' . $op . '&' . $this->generateConfirmationQueryParams($op) . '&cid=' . $confirmation->getConfirmationId() . '&ck=' . $confirmation->getConfirmationKey());
-			if (!empty($response)) {
-				$json = json_decode($response, true);
-				$success = isset($json['success']) && $json['success'];
-			}
+        $success = false;
+        $failures = 0;
+        while ($failures != 5) {
+            $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/mobileconf/ajaxop?op=' . $op . '&' . $this->generateConfirmationQueryParams($op) . '&cid=' . $confirmation->getConfirmationId() . '&ck=' . $confirmation->getConfirmationKey());
+            if (!empty($response)) {
+                $json = json_decode($response, true);
+                $success = isset($json['success']) && $json['success'];
+            }
 
-			if ($success) {
-				break;
-			}
+            if ($success) {
+                break;
+            }
 
-			$failures++;
-			if (!$success) {
-				SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
+            $failures++;
+            if (!$success) {
+                SteamCommunity::getInstance()->getClassFromCache('Auth\MobileAuth')->refreshSession();
                 sleep(3);
-			}
-		}
+            }
+        }
 
         return $success;
     }

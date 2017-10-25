@@ -18,25 +18,25 @@ use waylaidwanderer\SteamCommunity\Auth\MobileAuth;
 
 class SteamCommunity
 {
-	protected static $fromCache = false;
+    protected static $fromCache = false;
 
-	protected static $instance = null;
-	protected static $classCache = array();
-	protected static $settings = array();
+    protected static $instance = null;
+    protected static $classCache = array();
+    protected static $settings = array();
 
-	protected static $cache = array();
+    protected static $cache = array();
 
-	public function beginSteamCommunity(array $settings = array())
-	{
-		self::$settings = $settings;
+    public function beginSteamCommunity(array $settings = array())
+    {
+        self::$settings = $settings;
 
-		foreach ($settings as $key => $value) {
+        foreach ($settings as $key => $value) {
             if ($key == 'fromCache' && $value) {
                 self::$fromCache = true;
             }
 
-			self::$cache[$key] = $value;
-		}
+            self::$cache[$key] = $value;
+        }
 
         if (!self::$fromCache) {
             self::getClassFromCache('Auth\Auth')->startSession();
@@ -44,67 +44,67 @@ class SteamCommunity
                 self::getClassFromCache('Auth\MobileAuth')->startSession();
             }
         }
-	}
+    }
 
-	public static function initialize(array $settings = array())
-	{
-		self::getInstance()->beginSteamCommunity($settings);
-	}
+    public static function initialize(array $settings = array())
+    {
+        self::getInstance()->beginSteamCommunity($settings);
+    }
 
-	public static function getInstance()
-	{
-		if (self::$instance === null) {
-			self::$instance = new self(self::$settings);
-		}
+    public static function getInstance()
+    {
+        if (self::$instance === null) {
+            self::$instance = new self(self::$settings);
+        }
 
-		return self::$instance;
-	}
+        return self::$instance;
+    }
 
-	public function getClass($class)
-	{
-		$namespaceClass = 'waylaidwanderer\\SteamCommunity\\' . $class;
-		return (func_num_args() > 1 ? new $namespaceClass(func_get_args()) : new $namespaceClass());
-	}
+    public function getClass($class)
+    {
+        $namespaceClass = 'waylaidwanderer\\SteamCommunity\\' . $class;
+        return (func_num_args() > 1 ? new $namespaceClass(func_get_args()) : new $namespaceClass());
+    }
 
-	public function getClassFromCache($class)
-	{
-		if (!array_key_exists($class, self::$classCache)) {
-			$namespaceClass = 'waylaidwanderer\\SteamCommunity\\' . $class;
-			self::$classCache[$class] = (func_num_args() > 1 ? new $namespaceClass(func_get_args()) : new $namespaceClass());
-		}
+    public function getClassFromCache($class)
+    {
+        if (!array_key_exists($class, self::$classCache)) {
+            $namespaceClass = 'waylaidwanderer\\SteamCommunity\\' . $class;
+            self::$classCache[$class] = (func_num_args() > 1 ? new $namespaceClass(func_get_args()) : new $namespaceClass());
+        }
 
-		return self::$classCache[$class];
-	}
+        return self::$classCache[$class];
+    }
 
-	public function set($key, $value)
-	{
-		self::$cache[$key] = $value;
+    public function set($key, $value)
+    {
+        self::$cache[$key] = $value;
         file_put_contents($this->getFilePath('steamcommunity', $this->get('username') . '_login'), serialize($this->getAll()));
         return $value;
-	}
+    }
 
-	public function setAll(array $data = array())
-	{
-		foreach ($data as $key => $value) {
-			$this->set($key, $value);
-		}
+    public function setAll(array $data = array())
+    {
+        foreach ($data as $key => $value) {
+            $this->set($key, $value);
+        }
 
         file_put_contents($this->getFilePath('steamcommunity', $this->get('username') . '_login'), serialize($this->getAll()));
-	}
+    }
 
-	public function get($key)
-	{
-		if (!empty(self::$cache) && array_key_exists($key, self::$cache)) {
-			return self::$cache[$key];
-		}
+    public function get($key)
+    {
+        if (!empty(self::$cache) && array_key_exists($key, self::$cache)) {
+            return self::$cache[$key];
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public function getAll(array $ignore = array())
-	{
-		return array_diff_key(self::$cache, array_flip($ignore));
-	}
+    public function getAll(array $ignore = array())
+    {
+        return array_diff_key(self::$cache, array_flip($ignore));
+    }
 
     /**
      * Login with the set username and password.
@@ -169,16 +169,16 @@ class SteamCommunity
             return LoginResult::GeneralFailure;
         } else if (isset($loginJson['captcha_needed']) && $loginJson['captcha_needed']) {
             $this->requiresCaptcha = true;
-			$this->set('requiresCaptcha', true);
-			$this->set('captchaGID', $loginJson['captcha_gid']);
+            $this->set('requiresCaptcha', true);
+            $this->set('captchaGID', $loginJson['captcha_gid']);
             return LoginResult::NeedCaptcha;
         } else if (isset($loginJson['emailauth_needed']) && $loginJson['emailauth_needed']) {
             $this->requiresEmail = true;
-			$this->set('requiresEmail', true);
-			$this->set('steamId', $loginJson['emailsteamid']);
+            $this->set('requiresEmail', true);
+            $this->set('steamId', $loginJson['emailsteamid']);
             return LoginResult::NeedEmail;
         } else if (isset($loginJson['requires_twofactor']) && $loginJson['requires_twofactor'] && !$loginJson['success']) {
-			$this->set('requires2FA', true);
+            $this->set('requires2FA', true);
             return LoginResult::Need2FA;
         } else if (isset($loginJson['login_complete']) && !$loginJson['login_complete']) {
             return LoginResult::BadCredentials;
@@ -187,18 +187,18 @@ class SteamCommunity
         } else if ($loginJson['success']) {
             if (isset($loginJson['oauth'])) {
                 file_put_contents($this->getClassFromCache('Auth\Auth')->getAuthFilePath('mobile'), $loginJson['oauth']);
-				$this->getClassFromCache('Auth\MobileAuth')->startSession();
-				$this->getClassFromCache('Auth\MobileAuth')->setAuth($loginJson['oauth']);
+                $this->getClassFromCache('Auth\MobileAuth')->startSession();
+                $this->getClassFromCache('Auth\MobileAuth')->setAuth($loginJson['oauth']);
             }
 
             if (isset($loginJson['transfer_parameters'])) {
                 file_put_contents($this->getClassFromCache('Auth\Auth')->getAuthFilePath('web'), $loginJson['transfer_parameters']);
                 $this->getClassFromCache('Auth\Auth')->startSession();
-				$this->getClassFromCache('Auth\Auth')->setAuth($loginJson['transfer_parameters']);
+                $this->getClassFromCache('Auth\Auth')->setAuth($loginJson['transfer_parameters']);
             }
 
-			$this->set('loggedIn', true);
-			$this->set('lastLoginTime', time());
+            $this->set('loggedIn', true);
+            $this->set('lastLoginTime', time());
 
             return LoginResult::LoginOkay;
         }
@@ -206,24 +206,24 @@ class SteamCommunity
         return LoginResult::GeneralFailure;
     }
 
-	public function reLogin($firstResponse = false, $mobile = false)
-	{
-		$loginResult = $this->doLogin($mobile, true);
-		if ($firstResponse && $loginResult != $firstResponse) {
-			return $loginResult;
-		}
+    public function reLogin($firstResponse = false, $mobile = false)
+    {
+        $loginResult = $this->doLogin($mobile, true);
+        if ($firstResponse && $loginResult != $firstResponse) {
+            return $loginResult;
+        }
 
-		$authCode = $this->getClassFromCache('Auth\SteamGuard')->generateSteamGuardCode();
-		$this->set('twoFactorCode', $authCode);
+        $authCode = $this->getClassFromCache('Auth\SteamGuard')->generateSteamGuardCode();
+        $this->set('twoFactorCode', $authCode);
 
-		return $this->doLogin($mobile, true);
-	}
+        return $this->doLogin($mobile, true);
+    }
 
     public function getFileDir($dir)
     {
         if (empty($this->get('rootDir'))) {
-			return '';
-		}
+            return '';
+        }
 
         return $this->get('rootDir') . DIRECTORY_SEPARATOR . $dir;
     }
@@ -231,8 +231,8 @@ class SteamCommunity
     public function getFilePath($dir, $name, $ext = false)
     {
         if (empty($this->get('rootDir'))) {
-			return '';
-		}
+            return '';
+        }
 
         return $this->getFileDir($dir) . DIRECTORY_SEPARATOR . $name . ($ext ? '.' . $ext : '');
     }

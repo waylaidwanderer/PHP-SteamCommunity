@@ -20,15 +20,15 @@ class Group
     private $url;
     private $xml;
 
-	public function setGroupId($gid)
-	{
-		$this->gid = $gid;
-	}
+    public function setGroupId($gid)
+    {
+        $this->gid = $gid;
+    }
 
-	public function setGroupUrl($url)
-	{
-		$this->url = $url;
-	}
+    public function setGroupUrl($url)
+    {
+        $this->url = $url;
+    }
 
     public function getGroupXml($page = 1)
     {

@@ -13,10 +13,10 @@ class Profile
     private $steamId;
     private $profile;
 
-	public function setSteamId($steamId)
-	{
-		$this->steamId = $steamId;
-	}
+    public function setSteamId($steamId)
+    {
+        $this->steamId = $steamId;
+    }
 
     public function getProfileXml()
     {
@@ -43,41 +43,41 @@ class Profile
         return false;
     }
 
-	public function editProfile(array $settings = array())
-	{
-		$params = [
-			'sessionID' => SteamCommunity::getInstance()->get('sessionId'),
-			'type' => 'profileSave',
-		] + $settings;
+    public function editProfile(array $settings = array())
+    {
+        $params = [
+            'sessionID' => SteamCommunity::getInstance()->get('sessionId'),
+            'type' => 'profileSave',
+        ] + $settings;
 
-		$url = 'https://steamcommunity.com/id/' . SteamCommunity::getInstance()->get('profileId') . '/edit';
-		$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $url, $params);
+        $url = 'https://steamcommunity.com/id/' . SteamCommunity::getInstance()->get('profileId') . '/edit';
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL($url, $url, $params);
 
-		if (strpos($response, 'Steam Community :: Error') !== false) {
-			return true;
-		}
+        if (strpos($response, 'Steam Community :: Error') !== false) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public function profileComment($comment)
-	{
-		$params = [
-			'comment' => $comment,
-			'sessionid' => SteamCommunity::getInstance()->get('sessionId')
-		];
+    public function profileComment($comment)
+    {
+        $params = [
+            'comment' => $comment,
+            'sessionid' => SteamCommunity::getInstance()->get('sessionId')
+        ];
 
-		$response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/comment/Profile/post/' . Helper::toCommunityId($this->steamId) . '/-1/', null, $params);
-		if (!$response = Helper::processJson($response)) {
-			return false;
-		}
+        $response = SteamCommunity::getInstance()->getClassFromCache('Network')->cURL('https://steamcommunity.com/comment/Profile/post/' . Helper::toCommunityId($this->steamId) . '/-1/', null, $params);
+        if (!$response = Helper::processJson($response)) {
+            return false;
+        }
 
-		if (isset($response['success']) && $response['success']) {
-			return true;
-		}
+        if (isset($response['success']) && $response['success']) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
     public function getGroups()
     {
