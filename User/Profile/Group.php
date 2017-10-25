@@ -8,7 +8,6 @@
 
 namespace waylaidwanderer\SteamCommunity\User;
 
-
 class Group
 {
     private $groupId64;
